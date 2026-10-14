@@ -25,5 +25,9 @@
   "devDependencies": {
     "concurrently": "^10.0.6",
     "typescript": "5.9.3"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "protobufjs@7.6.6": true
   }
 }
