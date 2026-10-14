@@ -1,0 +1,12 @@
+# ===========================================================================
+# Observability namespace — collector, Jaeger, Prometheus, Grafana.
+# No istio-injection label on purpose: these are infrastructure backends and
+# the lab keeps sidecar-free scraping/export simple (and the pods small).
+#   kubectl apply -f k8s/observability/namespace.yaml
+# ===========================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: observability
+  labels:
+    app.kubernetes.io/part-of: resilience-lab

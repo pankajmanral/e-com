@@ -1,0 +1,50 @@
+# ===========================================================================
+# Chaos Mesh — NetworkChaos: inject latency into product-service traffic.
+# CANONICAL LOCATION: chaos/experiments/ is the source of truth for chaos
+# manifests (k8s/chaos/*.yaml are pointer stubs — see docs/INFRA.md).
+#
+#   kubectl apply -f chaos/experiments/network-latency.yaml
+#   kubectl delete -f chaos/experiments/network-latency.yaml   # recover
+#
+# Equivalent admin-dashboard action: "Chaos → Network latency →
+# product-service → 200ms ± 50ms → 2m".
+#
+# What it does: tc/netem on the product-service pods delays egress traffic
+# ("direction: to" = packets LEAVING the selected pods, i.e. their HTTP
+# responses toward order-service/frontend callers). 200ms base + 50ms jitter
+# models a degraded network link without breaking connectivity — the classic
+# "it works but slowly" failure that pure retry logic cannot fix and timeouts
+# must bound.
+#
+# Expected observations:
+#   1. product-service p95 latency climbs by ~200-250ms (HighP95Latency
+#      alert threshold 1.5s only trips if you raise the delay — try 1500ms
+#      for that demo)
+#   2. p99 fans out because of the jitter (see the percentiles panel)
+#   3. Istio perTryTimeout=1s keeps most requests alive; overall timeout=3s
+#      caps the tail — traces show the retries as sibling spans
+#   4. recovery is instant on delete (tc rules removed)
+#
+# Safety: selector targets ONLY app=product-service in namespace ecommerce;
+# the mesh infrastructure (istiod, ingressgateway) is never selected.
+# ===========================================================================
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: product-service-network-latency
+  namespace: ecommerce
+  labels:
+    app: product-service
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  action: delay
+  mode: all                # all product-service pods degrade together
+  selector:
+    labelSelectors:
+      app: product-service
+  direction: to            # delay packets leaving the selected pods
+  delay:
+    latency: 200ms         # fixed base latency
+    jitter: 50ms           # random +-50ms on top (spread = tail latency)
+    correlation: "25"      # % of packets sharing the same deviation
+  duration: 2m             # auto-revert

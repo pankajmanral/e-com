@@ -1,0 +1,128 @@
+# ===========================================================================
+# product-service — 2 replicas behind a ClusterIP Service.
+# This is the service targeted by every chaos demo in the lab.
+#   kubectl apply -f k8s/product-service.yaml
+# ===========================================================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: product-service
+  namespace: ecommerce
+  labels:
+    app: product-service
+    app.kubernetes.io/part-of: resilience-lab
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: product-service
+  namespace: ecommerce
+  labels:
+    app: product-service
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: product-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service
+  namespace: ecommerce
+  labels:
+    app: product-service
+    version: v1
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: product-service
+  template:
+    metadata:
+      labels:
+        app: product-service
+        version: v1
+        app.kubernetes.io/part-of: resilience-lab
+    spec:
+      serviceAccountName: product-service
+      terminationGracePeriodSeconds: 10
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: product-service
+          image: ecommerce/product-service:1.0.0
+          imagePullPolicy: IfNotPresent # loaded via `minikube image load`
+          ports:
+            - name: http
+              containerPort: 4002
+          env:
+            - name: PORT
+              value: "4002"
+            - name: DEPLOYMENT_ENV
+              value: k8s
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=384"
+          envFrom:
+            - configMapRef:
+                name: ecommerce-config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+  namespace: ecommerce
+  labels:
+    app: product-service
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  type: ClusterIP
+  selector:
+    app: product-service
+  ports:
+    - name: http
+      port: 4002
+      targetPort: http

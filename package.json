@@ -1,0 +1,29 @@
+{
+  "name": "service-mesh-resilience-lab",
+  "version": "1.0.0",
+  "private": true,
+  "description": "E-Commerce web application used as a lab for service-mesh resilience engineering with OpenTelemetry and chaos experiments (MSc IT final-year project).",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20.10.0"
+  },
+  "scripts": {
+    "build:shared": "npm run build -w @ecommerce/shared",
+    "build:services": "npm run build:shared && npm run build -w @ecommerce/user-service && npm run build -w @ecommerce/product-service && npm run build -w @ecommerce/order-service && npm run build -w @ecommerce/ops-service",
+    "build": "npm run build:services && npm run build -w @ecommerce/web",
+    "dev": "npm run build:shared && concurrently -k -n user,product,order,ops,web -c cyan,magenta,yellow,green,blue \"npm run dev -w @ecommerce/user-service\" \"npm run dev -w @ecommerce/product-service\" \"npm run dev -w @ecommerce/order-service\" \"npm run dev -w @ecommerce/ops-service\" \"npm run dev -w @ecommerce/web\"",
+    "dev:services": "npm run build:shared && concurrently -k -n user,product,order,ops -c cyan,magenta,yellow,green \"npm run dev -w @ecommerce/user-service\" \"npm run dev -w @ecommerce/product-service\" \"npm run dev -w @ecommerce/order-service\" \"npm run dev -w @ecommerce/ops-service\"",
+    "start:services": "npm run build:services && concurrently -k \"npm run start -w @ecommerce/user-service\" \"npm run start -w @ecommerce/product-service\" \"npm run start -w @ecommerce/order-service\" \"npm run start -w @ecommerce/ops-service\"",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "smoke": "node scripts/smoke-test.mjs"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6",
+    "typescript": "5.9.3"
+  }
+}

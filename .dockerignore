@@ -1,0 +1,16 @@
+node_modules
+**/node_modules
+**/dist
+.next
+**/.next
+.git
+.env
+.env.*
+!.env.example
+coverage
+*.log
+docs
+README.md
+k8s
+chaos
+scripts

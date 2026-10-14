@@ -1,0 +1,98 @@
+# ===========================================================================
+# Istio ingress — Gateway + edge VirtualService.
+#   kubectl apply -f k8s/istio/gateway.yaml
+#
+# Two ways to reach the app (documented here because the dissertation
+# discusses both):
+#
+#   A) Browser → ingressgateway :80 → frontend (Next.js), which then proxies
+#      /api/* SERVER-SIDE to the services. This is the default demo path:
+#      each browser request becomes one mesh-internal hop with a full trace.
+#
+#   B) Browser/curl → ingressgateway :80 → per-API prefix routes below.
+#      Because the gateway terminates the request before the frontend, mesh
+#      retries/timeouts from k8s/istio/virtual-services.yaml apply to each
+#      API call individually — the path that makes retry storms and circuit
+#      breakers directly observable in Jaeger. Use this for the appendix
+#      walkthroughs (curl http://<minikube-ip>/api/products).
+# ===========================================================================
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata:
+  name: resilience-lab-gateway
+  namespace: ecommerce
+spec:
+  selector:
+    # Standard label of the istio ingressgateway installed by
+    # `istioctl install --set profile=demo`.
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*"
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: edge
+  namespace: ecommerce
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - resilience-lab-gateway
+  http:
+    # Business APIs first: Istio matches the most specific prefix. Routing
+    # them at the edge (instead of through the Next.js proxy) enables the
+    # mesh-level retry/timeout policy on every API call.
+    - name: users-api
+      match:
+        - uri:
+            prefix: /api/users
+      route:
+        - destination:
+            host: user-service
+            port:
+              number: 4001
+    - name: products-api
+      match:
+        - uri:
+            prefix: /api/products
+      route:
+        - destination:
+            host: product-service
+            port:
+              number: 4002
+    - name: orders-api
+      match:
+        - uri:
+            prefix: /api/orders
+      route:
+        - destination:
+            host: order-service
+            port:
+              number: 4003
+    - name: ops-api
+      match:
+        - uri:
+            prefix: /api/ops
+      route:
+        - destination:
+            host: ops-service
+            port:
+              number: 4004
+    # Everything else (/, /_next/*, /api/* leftovers) goes to the Next.js
+    # storefront. The app's internal proxy still resolves the same APIs
+    # directly, which is why both paths produce comparable traces.
+    - name: frontend
+      match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: frontend
+            port:
+              number: 3000

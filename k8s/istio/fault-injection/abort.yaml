@@ -1,0 +1,48 @@
+# ===========================================================================
+# Istio fault-injection TEMPLATE — 503 ABORT on product-service.
+#   kubectl apply -f k8s/istio/fault-injection/abort.yaml
+#   kubectl delete -f k8s/istio/fault-injection/abort.yaml   # stop it
+#
+# *** THIS IS A MANUAL DEMO TEMPLATE ***
+# The ops-service applies the EQUIVALENT VirtualService patch dynamically
+# when you press "Abort traffic" on the admin dashboard (or call
+# POST /api/ops/chaos with {"type":"outage"}). Same object name
+# `product-service-fault-injection` — do not run abort.yaml and delay.yaml
+# at the same time, they would fight over it. This file is the quoted
+# appendix manifest and the manual fallback.
+#
+# Expected observation, in order (compare with the Grafana resilience row):
+#   1. error rate on product-service jumps toward 100%
+#   2. Istio retries (gateway-error is in retryOn) hide the first ~1-2s
+#   3. after consecutive5xxErrors=5 the outlier detector ejects product
+#      pods; remaining pods still abort, so upstreams (order-service) see
+#      connect-failures instead and start shedding via their own breakers
+#   4. deleting the VirtualService restores traffic within seconds — the
+#      recovery curve belongs in the before/after evidence pack.
+# ===========================================================================
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: product-service-fault-injection
+  namespace: ecommerce
+  labels:
+    app: product-service
+    app.kubernetes.io/part-of: resilience-lab
+    lab.chaos/managed-by: manual
+spec:
+  hosts:
+    - product-service
+  http:
+    - name: aborted
+      fault:
+        abort:
+          # 503 from the sidecar itself — no upstream involvement.
+          percentage:
+            value: 100
+          httpStatus: 503
+      route:
+        - destination:
+            host: product-service
+            subset: v1
+            port:
+              number: 4002

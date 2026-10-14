@@ -1,0 +1,507 @@
+# ===========================================================================
+# GENERATED FILE — do not edit by hand.
+# Source: observability/grafana/dashboards/resilience-lab.json
+# Regenerate: node scripts/gen-dashboard-configmap.mjs
+# Mounted at /etc/grafana/dashboards/resilience-lab.json by the Grafana
+# Deployment (k8s/observability/grafana.yaml). Well under the 1MiB
+# ConfigMap limit.
+# ===========================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard
+  namespace: observability
+  labels:
+    app: grafana
+    app.kubernetes.io/part-of: resilience-lab
+data:
+  resilience-lab.json: |
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "description": "RED metrics (Rate, Errors, Duration) for every microservice in the Service-Mesh Resilience Lab, plus a resilience row for observing chaos experiments. All queries aggregate sum by (service) because every service exports identical metric names.",
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "links": [
+        { "asDropdown": false, "icon": "external link", "includeVars": false, "keepTime": true, "tags": [], "targetBlank": true, "title": "Jaeger UI", "tooltip": "Open Jaeger", "type": "link", "url": "http://localhost:16686" },
+        { "asDropdown": false, "icon": "external link", "includeVars": false, "keepTime": false, "tags": [], "targetBlank": true, "title": "Prometheus", "tooltip": "Open Prometheus", "type": "link", "url": "http://localhost:9090" }
+      ],
+      "panels": [
+        {
+          "type": "row",
+          "title": "RED — Rate, Errors, Duration",
+          "id": 100,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+          "collapsed": false,
+          "panels": []
+        },
+        {
+          "type": "timeseries",
+          "title": "Request rate (req/s)",
+          "id": 1,
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 1 },
+          "description": "sum by (service) of rate(http_requests_total[$__interval]). During the pod-failure experiment the affected service's rate dips until the replacement pod is ready.",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "showPoints": "never",
+                "spanNulls": false,
+                "gradientMode": "opacity"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "teal", "value": null },
+                  { "color": "navy", "value": 50 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+            "tooltip": { "mode": "multi", "sort": "desc" }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "sum by (service) (rate(http_requests_total{service=~\"$service\"}[$__interval]))",
+              "legendFormat": "{{service}}",
+              "interval": "",
+              "editorMode": "code",
+              "range": true,
+              "instant": false
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Error rate (%)",
+          "id": 2,
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 1 },
+          "description": "Percentage of 5xx responses. The HighErrorRate alert (>5% for 2m) is derived from the same expression. Chaos abort experiments should make this spike to 100% for the targeted service.",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percent",
+              "min": 0,
+              "max": 100,
+              "color": { "mode": "thresholds" },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 15,
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "teal", "value": null },
+                  { "color": "navy", "value": 5 },
+                  { "color": "dark-red", "value": 25 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+            "tooltip": { "mode": "multi", "sort": "desc" }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "100 * sum by (service) (rate(http_requests_total{service=~\"$service\",status=~\"5..\"}[$__interval])) / clamp_min(sum by (service) (rate(http_requests_total{service=~\"$service\"}[$__interval])), 0.0001)",
+              "legendFormat": "{{service}}",
+              "editorMode": "code",
+              "range": true,
+              "instant": false
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "p95 latency",
+          "id": 3,
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 9 },
+          "description": "histogram_quantile(0.95, ...) over http_request_duration_seconds_bucket. The HighP95Latency alert fires above 1.5s for 3m; the network-latency chaos experiment pushes this line up for product-service.",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "color": { "mode": "thresholds" },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 10,
+                "showPoints": "never",
+                "spanNulls": false
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "teal", "value": null },
+                  { "color": "navy", "value": 1.5 },
+                  { "color": "dark-red", "value": 3 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+            "tooltip": { "mode": "multi", "sort": "desc" }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.95, sum by (service, le) (rate(http_request_duration_seconds_bucket{service=~\"$service\"}[$__interval])))",
+              "legendFormat": "{{service}}",
+              "editorMode": "code",
+              "range": true,
+              "instant": false
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Latency percentiles (p50 / p95 / p99)",
+          "id": 4,
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 9 },
+          "description": "p50, p95 and p99 side by side (all services combined, filtered by $service). A widening p99/p50 gap is the classic signature of injected jitter or retry amplification.",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "smooth",
+                "lineWidth": 2,
+                "fillOpacity": 5,
+                "showPoints": "never",
+                "spanNulls": false
+              }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+            "tooltip": { "mode": "multi", "sort": "desc" }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.50, sum(le) (rate(http_request_duration_seconds_bucket{service=~\"$service\"}[$__interval])))",
+              "legendFormat": "p50",
+              "editorMode": "code",
+              "range": true,
+              "instant": false
+            },
+            {
+              "refId": "B",
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.95, sum(le) (rate(http_request_duration_seconds_bucket{service=~\"$service\"}[$__interval])))",
+              "legendFormat": "p95",
+              "editorMode": "code",
+              "range": true,
+              "instant": false
+            },
+            {
+              "refId": "C",
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "histogram_quantile(0.99, sum(le) (rate(http_request_duration_seconds_bucket{service=~\"$service\"}[$__interval])))",
+              "legendFormat": "p99",
+              "editorMode": "code",
+              "range": true,
+              "instant": false
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "Traffic by status class",
+          "id": 5,
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 17 },
+          "description": "Stacked request rate split by status code. Success (2xx/3xx) should dominate; 4xx spikes mean client errors; 5xx spikes mean the injected fault is landing.",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "fillOpacity": 30,
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": { "mode": "normal", "group": "A" }
+              }
+            },
+            "overrides": [
+              {
+                "matcher": { "id": "byRegexp", "options": ".*5..*" },
+                "properties": [{ "id": "color", "value": { "fixedColor": "dark-red", "mode": "fixed" } }]
+              },
+              {
+                "matcher": { "id": "byRegexp", "options": ".*4..*" },
+                "properties": [{ "id": "color", "value": { "fixedColor": "navy", "mode": "fixed" } }]
+              }
+            ]
+          },
+          "options": {
+            "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+            "tooltip": { "mode": "multi", "sort": "desc" }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "sum by (service, status) (rate(http_requests_total{service=~\"$service\"}[$__interval]))",
+              "legendFormat": "{{service}} {{status}}",
+              "editorMode": "code",
+              "range": true,
+              "instant": false
+            }
+          ]
+        },
+        {
+          "type": "table",
+          "title": "Top routes by volume",
+          "id": 6,
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 17 },
+          "description": "Which (service, route) pairs carry the most traffic right now — use it to pick a target for a fault-injection experiment.",
+          "fieldConfig": {
+            "defaults": { "unit": "reqps", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [ { "color": "teal", "value": null }, { "color": "navy", "value": 10 } ] } },
+            "overrides": []
+          },
+          "options": { "showHeader": true, "footer": { "show": false } },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "topk(10, sum by (service, route) (rate(http_requests_total{service=~\"$service\"}[$__interval])))",
+              "instant": true,
+              "range": false,
+              "editorMode": "code",
+              "format": "table"
+            }
+          ]
+        },
+        {
+          "type": "row",
+          "title": "Resilience — chaos experiments & mesh behaviour",
+          "id": 101,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 25 },
+          "collapsed": false,
+          "panels": []
+        },
+        {
+          "type": "timeseries",
+          "title": "Service liveness (up == 1 healthy)",
+          "id": 7,
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 7, "w": 8, "x": 0, "y": 26 },
+          "description": "Prometheus scrape success per target instance (job=services). During pod-failure this drops to 0 for the killed pod, then returns to 1 for the replacement — the ServiceDown alert uses the same signal.",
+          "fieldConfig": {
+            "defaults": {
+              "min": 0,
+              "max": 1,
+              "unit": "none",
+              "color": { "mode": "thresholds" },
+              "custom": { "drawStyle": "line", "lineInterpolation": "stepAfter", "lineWidth": 2, "fillOpacity": 20, "showPoints": "never", "spanNulls": true },
+              "thresholds": { "mode": "absolute", "steps": [ { "color": "dark-red", "value": null }, { "color": "teal", "value": 1 } ] }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true, "calcs": ["lastNotNull"] },
+            "tooltip": { "mode": "multi", "sort": "desc" }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "up{job=\"services\"}",
+              "legendFormat": "{{instance}}",
+              "editorMode": "code",
+              "range": true,
+              "instant": false
+            }
+          ]
+        },
+        {
+          "type": "timeseries",
+          "title": "5xx rate during chaos (req/s)",
+          "id": 8,
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 7, "w": 8, "x": 8, "y": 26 },
+          "description": "Absolute 5xx rate per service. Watch this while the abort experiment runs: Istio retries mask the first seconds, then the circuit breaker opens and errors are shed locally instead of hitting upstreams.",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "reqps",
+              "color": { "mode": "thresholds" },
+              "custom": { "drawStyle": "line", "lineInterpolation": "smooth", "lineWidth": 2, "fillOpacity": 15, "showPoints": "never", "spanNulls": false },
+              "thresholds": { "mode": "absolute", "steps": [ { "color": "teal", "value": null }, { "color": "navy", "value": 1 }, { "color": "dark-red", "value": 5 } ] }
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+            "tooltip": { "mode": "multi", "sort": "desc" }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "sum by (service) (rate(http_requests_total{service=~\"$service\",status=~\"5..\"}[$__interval]))",
+              "legendFormat": "{{service}}",
+              "editorMode": "code",
+              "range": true,
+              "instant": false
+            }
+          ]
+        },
+        {
+          "type": "stat",
+          "title": "Success ratio (all services)",
+          "id": 9,
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 7, "w": 8, "x": 16, "y": 26 },
+          "description": "Share of non-5xx responses across every service. This is the single number to put in the dissertation's before/after comparison table.",
+          "fieldConfig": {
+            "defaults": {
+              "unit": "percentunit",
+              "min": 0,
+              "max": 1,
+              "color": { "mode": "thresholds" },
+              "thresholds": { "mode": "absolute", "steps": [ { "color": "dark-red", "value": null }, { "color": "navy", "value": 0.95 }, { "color": "teal", "value": 0.995 } ] }
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+            "colorMode": "background",
+            "graphMode": "area",
+            "textMode": "auto",
+            "justifyMode": "auto"
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "1 - (sum(rate(http_requests_total{service=~\"$service\",status=~\"5..\"}[2m])) / clamp_min(sum(rate(http_requests_total{service=~\"$service\"}[2m])), 0.0001))",
+              "legendFormat": "success ratio",
+              "editorMode": "code",
+              "range": true,
+              "instant": false
+            }
+          ]
+        },
+        {
+          "type": "heatmap",
+          "title": "Latency distribution (heatmap)",
+          "id": 10,
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "gridPos": { "h": 9, "w": 16, "x": 0, "y": 33 },
+          "description": "Bucketed request durations. Under injected network latency the mass visibly slides to the right; with the circuit open it snaps back left as load is shed.",
+          "fieldConfig": {
+            "defaults": { "color": { "mode": "spectrum", "scheme": "Oranges" }, "custom": { "fillOpacity": 80, "hideFrom": { "legend": false, "tooltip": false, "viz": false }, "yAxis": { "axisPlacement": "auto" }, "scaleDistribution": { "type": "linear" } } },
+            "overrides": []
+          },
+          "options": {
+            "calculate": false,
+            "cellGap": 1,
+            "color": { "exponent": 0.5, "fill": "dark-orange", "inverse": false, "scale": "exponential", "scheme": "Oranges", "steps": 64, "mode": "scheme" },
+            "legend": { "show": true },
+            "tooltip": { "mode": "single", "yHistogram": false }
+          },
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": { "type": "prometheus", "uid": "prometheus" },
+              "expr": "sum by (le) (rate(http_request_duration_seconds_bucket{service=~\"$service\"}[$__interval]))",
+              "legendFormat": "{{le}}",
+              "editorMode": "code",
+              "range": true,
+              "instant": false,
+              "format": "heatmap"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "title": "How to read this during a chaos experiment",
+          "id": 11,
+          "gridPos": { "h": 9, "w": 8, "x": 16, "y": 33 },
+          "options": {
+            "mode": "markdown",
+            "code": { "language": "plaintext", "showLineNumbers": false, "showMiniMap": false },
+            "content": "**Before** — take a snapshot of this dashboard.\n\n**Start an experiment** (e.g. `scripts/chaos-start.ps1 -Type pod-failure` or the admin dashboard).\n\n**Expected sequence**\n1. `up` drops to 0 for the killed pod\n2. error rate ticks up, p95 spikes\n3. Istio retries absorb the first seconds\n4. outlier detection ejects the pod; breaker opens\n5. error rate plateaus, then recovers to teal\n\n**After** — snapshot again and diff with the before image.\n\nTraces for the failing requests: [Jaeger](http://localhost:16686)"
+          }
+        }
+      ],
+      "refresh": "10s",
+      "schemaVersion": 39,
+      "tags": ["resilience-lab", "red", "chaos"],
+      "templating": {
+        "list": [
+          {
+            "name": "service",
+            "label": "Service",
+            "type": "query",
+            "datasource": { "type": "prometheus", "uid": "prometheus" },
+            "query": "label_values(http_requests_total, service)",
+            "definition": "label_values(http_requests_total, service)",
+            "regex": "",
+            "sort": 1,
+            "refresh": 2,
+            "includeAll": true,
+            "allValue": ".*",
+            "multi": true,
+            "hide": 0,
+            "current": { "selected": true, "text": ["All"], "value": ["$__all"] },
+            "options": []
+          }
+        ]
+      },
+      "time": { "from": "now-30m", "to": "now" },
+      "timepicker": {
+        "refresh_intervals": ["5s", "10s", "30s", "1m", "5m"],
+        "time_options": ["5m", "15m", "1h", "3h", "6h", "12h", "24h"]
+      },
+      "timezone": "browser",
+      "title": "Resilience Lab — Service RED Metrics",
+      "uid": "resilience-lab-red",
+      "version": 1,
+      "weekStart": ""
+    }
+

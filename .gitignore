@@ -1,0 +1,16 @@
+node_modules/
+dist/
+.next/
+out/
+coverage/
+*.log
+.env
+.env.local
+.env.*.local
+.DS_Store
+.vscode/
+.idea/
+services/*/data/*.json
+!services/*/data/.gitkeep
+k8s/secrets.yaml
+*.tsbuildinfo

@@ -1,0 +1,205 @@
+# ===========================================================================
+# Grafana (in-cluster) with file-provisioned datasources + dashboard.
+#   kubectl apply -f k8s/observability/grafana.yaml
+# Reach it:
+#   kubectl -n observability port-forward svc/grafana 3001:3000
+#   open http://localhost:3001   (anonymous viewer OR admin/admin)
+# NodePort alternative (no port-forward during the demo):
+#   kubectl -n observability patch svc grafana -p \
+#     '{"spec":{"type":"NodePort","ports":[{"port":3000,"nodePort":30300}]}}'
+#   open http://$(minikube ip):30300
+# ===========================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: observability
+  labels:
+    app: grafana
+    app.kubernetes.io/part-of: resilience-lab
+data:
+  # Same content as observability/grafana/provisioning/datasources/
+  # datasources.yaml. The ${VAR:default} placeholders resolve inside the
+  # observability namespace, where prometheus:9090 and jaeger:16686 are the
+  # Service DNS names.
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        uid: prometheus
+        type: prometheus
+        access: proxy
+        url: ${PROMETHEUS_URL:http://prometheus:9090}
+        isDefault: true
+        editable: false
+        jsonData:
+          timeInterval: 5s
+          httpMethod: POST
+          manageAlerts: true
+      - name: Jaeger
+        uid: jaeger
+        type: jaeger
+        access: proxy
+        url: ${JAEGER_URL:http://jaeger:16686}
+        editable: false
+        jsonData:
+          nodeGraph:
+            enabled: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-provider
+  namespace: observability
+  labels:
+    app: grafana
+    app.kubernetes.io/part-of: resilience-lab
+data:
+  # Points the file provider at the directory the dashboard ConfigMap is
+  # mounted into. Same content as observability/grafana/provisioning/
+  # dashboards/dashboards.yaml.
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: resilience-lab
+        orgId: 1
+        folder: Resilience Lab
+        type: file
+        disableDeletion: false
+        updateIntervalSeconds: 30
+        allowUiUpdates: true
+        options:
+          path: /etc/grafana/dashboards
+          foldersFromFilesStructure: false
+---
+# NOTE: the dashboard JSON itself lives in its own ConfigMap (1MiB limit!)
+# in k8s/observability/grafana-dashboard.yaml — GENERATED from
+# observability/grafana/dashboards/resilience-lab.json by
+# scripts/gen-dashboard-configmap.mjs. Regenerate it after editing the JSON.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: observability
+  labels:
+    app: grafana
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+        app.kubernetes.io/part-of: resilience-lab
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000 # grafana image defaults to uid 472; we override both
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: grafana
+          image: grafana/grafana:11.1.0
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: GF_AUTH_ANONYMOUS_ENABLED
+              value: "true"
+            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+              value: Viewer
+            - name: GF_SECURITY_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  # Falls back to the example secret if present; otherwise
+                  # Grafana's baked-in admin/admin applies. Copy
+                  # k8s/secret.example.yaml to k8s/secrets.yaml and create
+                  # a secret named grafana-admin to override:
+                  #   kubectl -n observability create secret generic grafana-admin \
+                  #     --from-literal=admin-user=admin \
+                  #     --from-literal=admin-password=admin
+                  name: grafana-admin
+                  key: admin-user
+                  optional: true
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-admin
+                  key: admin-password
+                  optional: true
+            # Datasource URLs resolve inside the observability namespace.
+            - name: PROMETHEUS_URL
+              value: http://prometheus:9090
+            - name: JAEGER_URL
+              value: http://jaeger:16686
+          volumeMounts:
+            - name: datasources
+              mountPath: /etc/grafana/provisioning/datasources
+              readOnly: true
+            - name: dashboards-provider
+              mountPath: /etc/grafana/provisioning/dashboards
+              readOnly: true
+            - name: dashboards
+              mountPath: /etc/grafana/dashboards
+              readOnly: true
+            - name: storage
+              mountPath: /var/lib/grafana # sqlite + plugins cache
+          resources:
+            requests:
+              cpu: 100m
+              memory: 192Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false # sqlite lives under /var/lib/grafana
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: datasources
+          configMap:
+            name: grafana-datasources
+        - name: dashboards-provider
+          configMap:
+            name: grafana-dashboards-provider
+        - name: dashboards
+          configMap:
+            name: grafana-dashboard
+        - name: storage
+          emptyDir:
+            sizeLimit: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: observability
+  labels:
+    app: grafana
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  type: ClusterIP
+  selector:
+    app: grafana
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http

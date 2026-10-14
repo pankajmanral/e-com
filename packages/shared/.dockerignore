@@ -1,0 +1,5 @@
+# Shared library (built before services)
+packages/shared/dist
+**/node_modules
+**/dist
+.git

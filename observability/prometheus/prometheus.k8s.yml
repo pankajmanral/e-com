@@ -1,0 +1,45 @@
+# ===========================================================================
+# Prometheus — in-cluster (Kubernetes) scrape config
+# --------------------------------------------------------------------------
+# Targets are the in-cluster DNS names of the services in the `ecommerce`
+# namespace and of the collector in the `observability` namespace.
+#
+# A production setup would NOT ship static targets like this — it would run
+# the Prometheus Operator (kube-prometheus-stack) with Kubernetes service
+# discovery plus ServiceMonitors/PodMonitors. Static targets are used here
+# on purpose: they are trivially auditable for the dissertation and avoid
+# pulling the whole operator stack into the lab.
+#
+# Mounted by k8s/observability/prometheus.yaml at /etc/prometheus/prometheus.yml.
+# ===========================================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: minikube
+
+rule_files:
+  - /etc/prometheus/rules.yaml
+
+scrape_configs:
+  - job_name: services
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - user-service.ecommerce.svc.cluster.local:4001
+          - product-service.ecommerce.svc.cluster.local:4002
+          - order-service.ecommerce.svc.cluster.local:4003
+          - ops-service.ecommerce.svc.cluster.local:4004
+
+  # Collector self-metrics in the observability namespace.
+  - job_name: otel-collector
+    static_configs:
+      - targets:
+          - otel-collector.observability.svc.cluster.local:8889
+
+  # Prometheus self-scrape.
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - localhost:9090

@@ -1,0 +1,37 @@
+# ===========================================================================
+# Grafana provisioned datasources (file provisioning, read-only)
+# --------------------------------------------------------------------------
+# Works in BOTH compose and Kubernetes: both modes mount this file under
+# /etc/grafana/provisioning/datasources/ and Grafana expands ${VAR:default}
+# from its own environment. The compose file sets PROMETHEUS_URL/JAEGER_URL
+# explicitly; the k8s Deployment relies on the same in-network DNS names
+# (prometheus:9090 / jaeger:16686 resolve inside the observability namespace,
+# which is where both Grafana and the backends run).
+# ===========================================================================
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: ${PROMETHEUS_URL:http://prometheus:9090}
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: 5s
+      httpMethod: POST
+      manageAlerts: true
+
+  - name: Jaeger
+    uid: jaeger
+    type: jaeger
+    access: proxy
+    url: ${JAEGER_URL:http://jaeger:16686}
+    editable: false
+    jsonData:
+      nodeGraph:
+        enabled: true
+      tracesToLogs:
+        datasourceUid: prometheus

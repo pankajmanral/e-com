@@ -1,0 +1,130 @@
+# ===========================================================================
+# OPTIONAL canary twin of product-service (v2) — for the traffic-split demo.
+# Not applied by scripts/k8s-deploy.ps1 by default; apply manually:
+#   kubectl apply -f k8s/product-service-v2.yaml
+# then uncomment the canary VirtualService at the bottom of this file (or the
+# weighted route in k8s/istio/virtual-services.yaml) to send 10% of traffic
+# to v2. Disable with:
+#   kubectl delete -f k8s/product-service-v2.yaml
+# ===========================================================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: product-service-v2
+  namespace: ecommerce
+  labels:
+    app: product-service
+    version: v2
+    app.kubernetes.io/part-of: resilience-lab
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-service-v2
+  namespace: ecommerce
+  labels:
+    app: product-service
+    version: v2
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: product-service
+      version: v2
+  template:
+    metadata:
+      labels:
+        app: product-service # same app label: picked up by the v2 subset AND
+        version: v2          # by the main Service only if you opt in below
+        app.kubernetes.io/part-of: resilience-lab
+    spec:
+      serviceAccountName: product-service-v2
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: product-service
+          image: ecommerce/product-service:1.0.0 # same image, new behaviour flag
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 4002
+          env:
+            - name: PORT
+              value: "4002"
+            - name: DEPLOYMENT_ENV
+              value: k8s
+            # Runtime behaviour switch the product-service reads to serve
+            # the "v2" catalogue variant (implemented in the service code).
+            - name: PRODUCT_VERSION
+              value: v2
+          envFrom:
+            - configMapRef:
+                name: ecommerce-config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+---
+# NOTE: the main `product-service` Service selects app=product-service WITHOUT
+# a version qualifier, so v2 pods would join it as soon as this file is
+# applied — which is exactly what a simple canary wants (kube-proxy does the
+# 2:1 split for free). For an ISTIO-controlled 90/10 split, select only
+# subset v1 from the main route (k8s/istio/virtual-services.yaml does this)
+# and apply the commented VirtualService below instead:
+#
+# apiVersion: networking.istio.io/v1
+# kind: VirtualService
+# metadata:
+#   name: product-service-canary
+#   namespace: ecommerce
+# spec:
+#   hosts:
+#     - product-service
+#   http:
+#     - route:
+#         - destination:
+#             host: product-service
+#             subset: v1
+#           weight: 90
+#         - destination:
+#             host: product-service
+#             subset: v2
+#           weight: 10

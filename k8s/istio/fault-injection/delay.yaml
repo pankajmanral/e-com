@@ -1,0 +1,49 @@
+# ===========================================================================
+# Istio fault-injection TEMPLATE — FIXED 2s DELAY on product-service.
+#   kubectl apply -f k8s/istio/fault-injection/delay.yaml
+#   kubectl delete -f k8s/istio/fault-injection/delay.yaml   # stop it
+#
+# *** THIS IS A MANUAL DEMO TEMPLATE ***
+# The ops-service applies the EQUIVALENT VirtualService patch dynamically
+# when you press "Inject latency" on the admin dashboard (or call
+# POST /api/ops/chaos with {"type":"latency"}). Those runtime objects carry
+# the same name `product-service-fault-injection` and are deleted on
+# experiment end or timeout. This file exists so the appendix of the
+# dissertation can quote a complete, standalone manifest and so the demo
+# works even if the ops-service is down.
+#
+# Expected observation: p95 on product-service climbs past the 1.5s
+# HighP95Latency alert threshold; Istio retries (3 x 1s per-try timeout,
+# k8s/istio/virtual-services.yaml) absorb roughly the first second of the
+# injected 2s delay, then requests fail on the 3s overall timeout.
+# ===========================================================================
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: product-service-fault-injection
+  namespace: ecommerce
+  labels:
+    app: product-service
+    app.kubernetes.io/part-of: resilience-lab
+    lab.chaos/managed-by: manual
+spec:
+  hosts:
+    - product-service
+  http:
+    - name: delayed
+      fault:
+        delay:
+          # Inject a fixed 2s delay on 100% of requests. For a probabilistic
+          # demo change percentage to e.g. 30 and watch partial degradation.
+          percentage:
+            value: 100
+          fixedDelay: 2s
+      route:
+        - destination:
+            host: product-service
+            subset: v1
+            port:
+              number: 4002
+      # Deliberately NO retries/timeout override here: the demo wants the
+      # upstream policy (3s timeout, 3 attempts) to remain visible in the
+      # trace waterfalls so you can see retries multiply under the delay.

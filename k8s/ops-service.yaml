@@ -1,0 +1,165 @@
+# ===========================================================================
+# ops-service — chaos/observability control plane, 1 replica.
+# Runs the admin dashboard API: breaker states, resilience metrics proxy and
+# the chaos experiment launcher. In CHAOS_MODE=k8s it applies equivalent
+# VirtualService fault patches / Chaos Mesh CRs through the Kubernetes API,
+# so unlike the other services it gets a Role granting exactly those verbs
+# (no cluster-admin, no default SA).
+#   kubectl apply -f k8s/ops-service.yaml
+# ===========================================================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ops-service
+  namespace: ecommerce
+  labels:
+    app: ops-service
+    app.kubernetes.io/part-of: resilience-lab
+---
+# Least-privilege Role: the control plane may only touch fault-injection and
+# chaos resources inside its own namespace.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ops-service-chaos
+  namespace: ecommerce
+  labels:
+    app: ops-service
+    app.kubernetes.io/part-of: resilience-lab
+rules:
+  # Istio fault injection templates (delay/abort VirtualServices).
+  - apiGroups: ["networking.istio.io"]
+    resources: ["virtualservices"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Chaos Mesh experiment CRDs. Harmless if the CRDs are not installed —
+  # RBAC does not validate apiGroups against the apiserver's discovery list.
+  - apiGroups: ["chaos-mesh.org"]
+    resources: ["podchaos", "networkchaos", "stresschaos", "timechaos"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Read pod state to report experiment impact on the dashboard.
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ops-service-chaos
+  namespace: ecommerce
+  labels:
+    app: ops-service
+    app.kubernetes.io/part-of: resilience-lab
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ops-service-chaos
+subjects:
+  - kind: ServiceAccount
+    name: ops-service
+    namespace: ecommerce
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ops-service
+  namespace: ecommerce
+  labels:
+    app: ops-service
+    version: v1
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  # Single replica: it is a control plane, not a data path component. The
+  # dashboard tolerates its restart; chaos experiments it launched keep
+  # running because they live in etcd, not in its memory.
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: ops-service
+  template:
+    metadata:
+      labels:
+        app: ops-service
+        version: v1
+        app.kubernetes.io/part-of: resilience-lab
+    spec:
+      serviceAccountName: ops-service
+      terminationGracePeriodSeconds: 10
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: ops-service
+          image: ecommerce/ops-service:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 4004
+          env:
+            - name: PORT
+              value: "4004"
+            - name: DEPLOYMENT_ENV
+              value: k8s
+            # Guardrails are defence in depth: the Role in this file limits
+            # which resources this SA may touch, CHAOS_ALLOW_PATTERN in the
+            # app refuses non-local kube contexts, and CHAOS_NAMESPACE
+            # scopes every experiment it launches (all from ecommerce-config).
+          envFrom:
+            - configMapRef:
+                name: ecommerce-config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ops-service
+  namespace: ecommerce
+  labels:
+    app: ops-service
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  type: ClusterIP
+  selector:
+    app: ops-service
+  ports:
+    - name: http
+      port: 4004
+      targetPort: http

@@ -1,0 +1,119 @@
+# ===========================================================================
+# Istio VirtualServices — per-service retry + timeout policy.
+#   kubectl apply -f k8s/istio/virtual-services.yaml
+#
+# Every service gets the SAME resilience budget, which makes the chaos
+# comparisons clean (only the fault changes, never the policy):
+#
+#   timeout: 3s       — give up the whole request after 3s
+#   retries:          — up to 3 attempts, 1s budget each
+#     retryOn: gateway-error,connect-failure,refused-stream
+#       * gateway-error     — 502/503/504 from the upstream sidecar
+#       * connect-failure  — TCP connect failed (pod dead/ejected)
+#       * refused-stream   — upstream reset the HTTP/2 stream
+#     (NOT 5xx in general and NOT timeouts: retrying those amplifies load
+#     during an outage — a deliberate omission discussed in the dissertation)
+#
+# Note: a retried request hitting a pod mid-failure shows up in Grafana as a
+# brief error-rate bump before the outlier detector ejects the pod. That
+# two-phase shape (retry absorbs → breaker ejects) is the core observation
+# of the lab.
+#
+# The canary 90/10 weight split lives ONLY in k8s/product-service-v2.yaml —
+# these routes send 100% of traffic to subset v1.
+# ===========================================================================
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: user-service
+  namespace: ecommerce
+  labels:
+    app: user-service
+spec:
+  hosts:
+    - user-service
+  http:
+    - name: default
+      route:
+        - destination:
+            host: user-service
+            subset: v1
+            port:
+              number: 4001
+      timeout: 3s
+      retries:
+        attempts: 3
+        perTryTimeout: 1s
+        retryOn: gateway-error,connect-failure,refused-stream
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: product-service
+  namespace: ecommerce
+  labels:
+    app: product-service
+spec:
+  hosts:
+    - product-service
+  http:
+    - name: default
+      route:
+        - destination:
+            host: product-service
+            subset: v1
+            port:
+              number: 4002
+      timeout: 3s
+      retries:
+        attempts: 3
+        perTryTimeout: 1s
+        retryOn: gateway-error,connect-failure,refused-stream
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: order-service
+  namespace: ecommerce
+  labels:
+    app: order-service
+spec:
+  hosts:
+    - order-service
+  http:
+    - name: default
+      route:
+        - destination:
+            host: order-service
+            subset: v1
+            port:
+              number: 4003
+      timeout: 3s
+      retries:
+        attempts: 3
+        perTryTimeout: 1s
+        retryOn: gateway-error,connect-failure,refused-stream
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: ops-service
+  namespace: ecommerce
+  labels:
+    app: ops-service
+spec:
+  hosts:
+    - ops-service
+  http:
+    - name: default
+      route:
+        - destination:
+            host: ops-service
+            subset: v1
+            port:
+              number: 4004
+      timeout: 3s
+      retries:
+        attempts: 3
+        perTryTimeout: 1s
+        retryOn: gateway-error,connect-failure,refused-stream

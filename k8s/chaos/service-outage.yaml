@@ -1,0 +1,20 @@
+# ===========================================================================
+# POINTER STUB — the canonical service-outage (network partition) experiment
+# lives at:
+#
+#     chaos/experiments/service-outage.yaml
+#
+# chaos/experiments/ is the single source of truth for Chaos Mesh manifests
+# in this repo (decision recorded in docs/INFRA.md). Apply from there:
+#
+#     kubectl apply -f chaos/experiments/service-outage.yaml
+#     kubectl delete -f chaos/experiments/service-outage.yaml
+#
+# or via the wrapper:
+#
+#     scripts/chaos-start.ps1  -Type service-outage -Service product-service -Duration 90s
+#     scripts/chaos-stop.ps1   -Type service-outage
+#
+# This file intentionally contains NO manifest: do not kubectl-apply it.
+# See chaos/experiments/service-outage.yaml for the full NetworkChaos.
+# ===========================================================================

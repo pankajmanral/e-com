@@ -1,0 +1,43 @@
+# ===========================================================================
+# Chaos Mesh — PodChaos: fail ONE product-service pod.
+# CANONICAL LOCATION: chaos/experiments/ is the source of truth for chaos
+# manifests (k8s/chaos/*.yaml are pointer stubs — see docs/INFRA.md).
+#
+#   kubectl apply -f chaos/experiments/pod-failure.yaml
+#   kubectl delete -f chaos/experiments/pod-failure.yaml   # recover
+#
+# Equivalent admin-dashboard action: "Chaos → Pod failure → product-service
+# → 60s" on http://localhost:3000/ops (the ops-service applies this exact
+# object through the Kubernetes API, guarded by CHAOS_ENABLED +
+# CHAOS_ALLOW_PATTERN).
+#
+# What it does: Kubernetes SIGKILLs one matching pod; the Deployment
+# controller immediately starts a replacement. There is NO grace period
+# (gracePeriodSeconds: 0) so in-flight requests are dropped hard — the
+# worst realistic failure, and the one Istio retries are meant to absorb.
+#
+# Expected observations (Grafana "Resilience Lab" dashboard):
+#   1. `up` for one product-service instance drops to 0 (ServiceDown alert)
+#   2. brief error-rate bump on product-service as in-flight requests die
+#   3. Istio retries (connect-failure) mask most of it for callers
+#   4. replacement pod passes readiness, traffic re-balances, metrics
+#      recover — the whole cycle should stay under ~30s
+#
+# Duration is ISO-8601; Chaos Mesh auto-reverts when it elapses.
+# ===========================================================================
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: product-service-pod-failure
+  namespace: ecommerce
+  labels:
+    app: product-service
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  action: podFailure       # SIGKILL the selected pod(s)
+  mode: one                # exactly one pod — keep the blast radius small
+  selector:
+    labelSelectors:
+      app: product-service # matches the v1 pods (v2 included if deployed)
+  gracePeriodSeconds: 0    # hard kill: no graceful shutdown
+  duration: 60s            # auto-revert after a minute

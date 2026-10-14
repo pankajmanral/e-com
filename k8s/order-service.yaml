@@ -1,0 +1,139 @@
+# ===========================================================================
+# order-service — 2 replicas behind a ClusterIP Service.
+# Persists orders to services/order-service/data/orders.json, which is backed
+# by the emptyDir volume defined below (see also k8s/volumes.yaml).
+#   kubectl apply -f k8s/order-service.yaml
+# ===========================================================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: order-service
+  namespace: ecommerce
+  labels:
+    app: order-service
+    app.kubernetes.io/part-of: resilience-lab
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: order-service
+  namespace: ecommerce
+  labels:
+    app: order-service
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: order-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  namespace: ecommerce
+  labels:
+    app: order-service
+    version: v1
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+        version: v1
+        app.kubernetes.io/part-of: resilience-lab
+    spec:
+      serviceAccountName: order-service
+      terminationGracePeriodSeconds: 10
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000 # emptyDir is group-writable so uid 1000 can persist
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: order-service
+          image: ecommerce/order-service:1.0.0
+          imagePullPolicy: IfNotPresent # loaded via `minikube image load`
+          ports:
+            - name: http
+              containerPort: 4003
+          env:
+            - name: PORT
+              value: "4003"
+            - name: DEPLOYMENT_ENV
+              value: k8s
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=384"
+          envFrom:
+            - configMapRef:
+                name: ecommerce-config
+          volumeMounts:
+            # The service writes orders.json relative to its /app working
+            # dir; the emptyDir is per-pod (orders are lost on reschedule —
+            # acceptable for the lab, noted in docs/INFRA.md).
+            - name: order-data
+              mountPath: /app/services/order-service/data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false # must stay writable for orders.json
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+      volumes:
+        - name: order-data
+          emptyDir:
+            sizeLimit: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: ecommerce
+  labels:
+    app: order-service
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  type: ClusterIP
+  selector:
+    app: order-service
+  ports:
+    - name: http
+      port: 4003
+      targetPort: http

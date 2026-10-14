@@ -1,0 +1,19 @@
+# ===========================================================================
+# POINTER STUB — the canonical network-latency experiment lives at:
+#
+#     chaos/experiments/network-latency.yaml
+#
+# chaos/experiments/ is the single source of truth for Chaos Mesh manifests
+# in this repo (decision recorded in docs/INFRA.md). Apply from there:
+#
+#     kubectl apply -f chaos/experiments/network-latency.yaml
+#     kubectl delete -f chaos/experiments/network-latency.yaml
+#
+# or via the wrapper:
+#
+#     scripts/chaos-start.ps1  -Type network-latency -Service product-service -Duration 120s
+#     scripts/chaos-stop.ps1   -Type network-latency
+#
+# This file intentionally contains NO manifest: do not kubectl-apply it.
+# See chaos/experiments/network-latency.yaml for the full NetworkChaos.
+# ===========================================================================

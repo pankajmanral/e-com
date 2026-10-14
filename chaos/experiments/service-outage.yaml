@@ -1,0 +1,49 @@
+# ===========================================================================
+# Chaos Mesh — NetworkChaos partition: full network outage of product-service.
+# CANONICAL LOCATION: chaos/experiments/ is the source of truth for chaos
+# manifests (k8s/chaos/*.yaml are pointer stubs — see docs/INFRA.md).
+#
+#   kubectl apply -f chaos/experiments/service-outage.yaml
+#   kubectl delete -f chaos/experiments/service-outage.yaml   # recover
+#
+# Equivalent admin-dashboard action: "Chaos → Service outage (partition) →
+# product-service → 90s".
+#
+# What it does: a network PARTITION — every packet to/from the selected pods
+# is dropped. Unlike pod-failure the pods stay Running and pass their
+# /health probes, but they cannot serve anyone. This is deliberately the
+# nastiest case: liveness probes cannot detect it, so only the MESH notices
+# (connect-failures, refused streams) and reacts via retries + outlier
+# ejection. Great dissertation contrast to pod-failure.
+#
+# Expected observations:
+#   1. error rate on product-service spikes toward 100% for callers
+#   2. Istio retries fail too (nothing to retry onto once both replicas are
+#      partitioned) → order-service and the frontend see connect-failures
+#   3. upstream circuit breakers (their own outlierDetection) start shedding
+#   4. `up` stays 1! (Prometheus scrapes still work if scraping is from the
+#      pod side... in this lab Prometheus scrapes FROM outside, so `up`
+#      drops to 0 — note which of the two you observe and why)
+#   5. on delete, recovery is immediate; watch the error rate fall off a
+#      cliff on the 5xx panel
+#
+# Blast radius guard: mode: all covers every product-service replica —
+# that IS the point of this experiment — but nothing else is selected.
+# Keep duration short (<= 2m) so the demo never leaves the app broken.
+# ===========================================================================
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: product-service-network-outage
+  namespace: ecommerce
+  labels:
+    app: product-service
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  action: partition        # drop all selected traffic
+  mode: all
+  selector:
+    labelSelectors:
+      app: product-service
+  direction: both          # in AND out — a true black hole
+  duration: 90s            # auto-revert

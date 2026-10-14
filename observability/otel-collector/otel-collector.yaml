@@ -1,0 +1,90 @@
+# ===========================================================================
+# OpenTelemetry Collector (contrib) — pipeline for the Resilience Lab
+# --------------------------------------------------------------------------
+# Shape of the pipeline (see observability/otel-collector/README.md for the
+# long-form explanation):
+#
+#   services (OTLP) ──► receivers ──► processors ──► exporters ──► backends
+#                        otlp          memory_limiter  otlp/jaeger  (traces)
+#                        :4317/:4318   resource        debug        (traces)
+#                                      batch           prometheus   (metrics)
+#                                                             :8889
+#
+# Receivers
+#   otlp — the single ingest point for every service. Both protocols are
+#   enabled because the Node SDK uses OTLP/HTTP (:4318) by default while
+#   sidecars and other tooling often prefer OTLP/gRPC (:4317).
+#
+# Processors
+#   memory_limiter — back-pressure the pipeline if the collector itself is
+#     close to OOM (this is a resilience lab: the observer must not become
+#     the outage). Rejects data rather than crashing.
+#   resource — stamps deployment.environment.name on every span so Jaeger
+#     can distinguish "compose" from "minikube" runs. `upsert` only adds the
+#     attribute when a service did not set it itself.
+#   batch — coalesces exports (fewer, bigger gRPC messages) which materially
+#     lowers overhead on the small VMs used for the demo.
+#
+# Exporters
+#   otlp/jaeger — forwards to the Jaeger all-in-one OTLP gRPC receiver on
+#     :4317. gRPC is chosen over HTTP here because it is what the Jaeger
+#     collector enables by default with COLLECTOR_OTLP_ENABLED=true and it
+#     multiplexes many streams over one connection; HTTP :4318 would work
+#     identically with `endpoint: http://jaeger:4318/v1/traces`-style config.
+#     `insecure` is correct for in-cluster plaintext — the lab network is not
+#     exposed beyond localhost port-forwards.
+#   debug — logs a summary of every exported batch at info level; great for
+#     teaching ("watch the spans arrive") during the dissertation demo.
+#   prometheus — exposes the collector's OWN internal metrics on :8889 so
+#     Prometheus can scrape how well the collector itself is doing
+#     (accepted/spanned/exported counts, queue size). Meta-observability.
+# ===========================================================================
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 400
+    spike_limit_mib: 100
+  resource:
+    attributes:
+      - key: deployment.environment.name
+        value: ${env:DEPLOYMENT_ENV:local}
+        action: upsert
+  batch:
+    send_batch_size: 512
+    send_batch_max_size: 1024
+    timeout: 2s
+
+exporters:
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true # plaintext inside the compose/lab network only
+  debug:
+    verbosity: basic
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    enable_open_metrics: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlp/jaeger, debug]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus, debug]
+  telemetry:
+    metrics:
+      # Collector's own telemetry (added in 0.23+ under service.telemetry).
+      address: 0.0.0.0:8888

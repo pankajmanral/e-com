@@ -1,0 +1,47 @@
+# ===========================================================================
+# Shared configuration for every pod in the ecommerce namespace.
+# Deployments reference it via envFrom.configMapRef.
+#
+#   kubectl apply -f k8s/configmap.yaml
+#   kubectl -n ecommerce create configmap ecommerce-config --from-file=.   # alternative
+# ===========================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ecommerce-config
+  namespace: ecommerce
+  labels:
+    app.kubernetes.io/part-of: resilience-lab
+data:
+  # --- service-to-service URLs (in-cluster DNS) ---
+  USER_SERVICE_URL: "http://user-service:4001"
+  PRODUCT_SERVICE_URL: "http://product-service:4002"
+  ORDER_SERVICE_URL: "http://order-service:4003"
+  OPS_SERVICE_URL: "http://ops-service:4004"
+
+  # --- observability ---
+  # Services export traces over OTLP/HTTP to the collector in the
+  # observability namespace. Full URL including scheme; the Node SDK appends
+  # /v1/traces itself.
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://otel-collector.observability.svc.cluster.local:4318"
+  OTEL_TRACES_EXPORTER: "otlp"
+  # ops-service scrapes resilience metrics from Prometheus.
+  PROMETHEUS_URL: "http://prometheus.observability.svc.cluster.local:9090"
+  LOG_LEVEL: "info"
+  # Comma-separated service:port list for the ops-service control plane.
+  SERVICES: "user-service:4001,product-service:4002,order-service:4003"
+
+  # --- chaos guards ---
+  # Local per-service fault-injection endpoints (/internal/fault) stay OFF
+  # in the cluster: Istio fault injection + Chaos Mesh are the real deal here.
+  FAULT_INJECTION_ENABLED: "false"
+  # Master switch for the ops-service chaos control plane. It additionally
+  # verifies the kubectl context against CHAOS_ALLOW_PATTERN before applying
+  # anything, so even with this "true" it refuses to run against anything but
+  # a local cluster (minikube / kind / Docker Desktop).
+  CHAOS_ENABLED: "true"
+  # k8s  = apply Chaos Mesh CRs + Istio VirtualService fault patches via API
+  # local = only the in-process fault endpoints (compose/dev mode)
+  CHAOS_MODE: "k8s"
+  CHAOS_ALLOW_PATTERN: "minikube|kind|desktop|docker-desktop|localhost"
+  CHAOS_NAMESPACE: "ecommerce"

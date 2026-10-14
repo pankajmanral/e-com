@@ -1,0 +1,1 @@
+# Keeps the data directory in git; runtime state (ops-state.json) is written here.

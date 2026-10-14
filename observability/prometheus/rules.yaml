@@ -1,0 +1,100 @@
+# ===========================================================================
+# Prometheus rules — recording + alerting rules for the Resilience Lab
+# --------------------------------------------------------------------------
+# Referenced from BOTH scrape configs (compose + in-cluster) via
+# `rule_files: [/etc/prometheus/rules.yaml]`.
+#
+# All services export identical metric names with a `service` label
+# (http_requests_total, http_request_duration_seconds), so every expression
+# aggregates `sum by (service) (...)`.
+# ===========================================================================
+
+groups:
+  # ---------------------------------------------------------------- recordings
+  # Pre-computed series that keep dashboard queries cheap and give the
+  # dissertation a stable PromQL vocabulary (http:request_rate, ...).
+  - name: http-recording-rules
+    interval: 30s
+    rules:
+      - record: http:request_rate
+        expr: sum by (service) (rate(http_requests_total[2m]))
+
+      - record: http:error_rate
+        expr: |
+          sum by (service) (rate(http_requests_total{status=~"5.."}[2m]))
+          /
+          clamp_min(sum by (service) (rate(http_requests_total[2m])), 0.0001)
+
+      - record: http:p95_latency_seconds
+        expr: |
+          histogram_quantile(0.95,
+            sum by (service, le) (rate(http_request_duration_seconds_bucket[2m])))
+
+      - record: http:p50_latency_seconds
+        expr: |
+          histogram_quantile(0.50,
+            sum by (service, le) (rate(http_request_duration_seconds_bucket[2m])))
+
+  # ------------------------------------------------------------------ alerts
+  - name: resilience-alerts
+    rules:
+      # >5% of requests failing for 2 minutes. During a chaos experiment this
+      # fires while Istio retries absorb the first seconds of the fault.
+      - alert: HighErrorRate
+        expr: http:error_rate > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.service }} error rate above 5%"
+          description: >-
+            {{ $labels.service }} has returned 5xx for >5% of traffic over the
+            last 2 minutes ({{ $value | humanizePercentage }}). Check the
+            Grafana "Resilience Lab" dashboard and Jaeger for the failing span
+            root cause.
+
+      # p95 above 1.5s for 3 minutes — the network-latency experiment should
+      # move this, and the mesh retry/timeout budget shows up here.
+      - alert: HighP95Latency
+        expr: http:p95_latency_seconds > 1.5
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.service }} p95 latency above 1.5s"
+          description: >-
+            {{ $labels.service }} p95 latency is {{ $value | humanizeDuration }}
+            over the last 3 minutes.
+
+      # A scrape target that has been down for 1 minute. During the
+      # pod-failure experiment this confirms the pod really died before the
+      # replacement came up.
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Scrape target {{ $labels.job }}/{{ $labels.instance }} down"
+          description: Prometheus has failed to scrape {{ $labels.instance }}
+            for 1 minute — the process is likely crashed or egress-blocked.
+
+      # HINT ALERT (commented on purpose): you cannot see Istio's circuit
+      # breaker directly in application metrics, but a sustained 5xx spike
+      # on ONE instance while others stay healthy is the classic signature of
+      # outlier-detection ejection. The ops-service surfaces the same signal
+      # from its breaker state endpoint (/api/ops). Uncomment to alert:
+      #
+      # - alert: CircuitLikelyOpen
+      #   expr: |
+      #     sum by (service, instance) (rate(http_requests_total{status=~"5.."}[1m])) > 1
+      #     and on(service) min by (service) (rate(http_requests_total{status!~"5.."}[1m])) > 0
+      #   for: 2m
+      #   labels:
+      #     severity: info
+      #   annotations:
+      #     summary: "{{ $labels.service }} on {{ $labels.instance }} looks ejected"
+      #     description: >-
+      #       Sustained 5xx on a single instance while the service as a whole
+      #       is serving traffic — likely Istio outlier detection ejection
+      #       (see DestinationRule outlierDetection in k8s/istio/).

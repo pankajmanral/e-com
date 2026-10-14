@@ -1,0 +1,163 @@
+# ===========================================================================
+# Istio DestinationRules — connection pooling + circuit breaking.
+#   kubectl apply -f k8s/istio/destination-rules.yaml
+#
+# These rules are the circuit breakers the dissertation references. Without
+# them Istio still routes, but with fully permissive defaults — adding them
+# is what turns "retry a dead dependency" into "shed load and fail fast".
+#
+# Each rule defines the `v1` subset (and `v2` for product-service, used by
+# the optional canary in k8s/product-service-v2.yaml) matching the
+# version=<v1|v2> pod labels.
+# ===========================================================================
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: user-service
+  namespace: ecommerce
+  labels:
+    app: user-service
+spec:
+  host: user-service # in-mesh Service DNS name
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        # Hard cap on simultaneous TCP connections to the upstream. Stops one
+        # retrying client from exhausting the upstream's accept queue.
+        maxConnections: 100
+      http:
+        # HTTP/2 max concurrent requests (HTTP/1.1 falls back to
+        # maxConnections). Keeps request fan-in bounded per connection.
+        http2MaxRequests: 100
+        # Reuse a connection for at most N requests — periodically recycles
+        # connections so a wedged keep-alive cannot pin traffic forever.
+        maxRequestsPerConnection: 10
+        # Requests allowed to queue while all connections are busy. Beyond
+        # this the sidecar responds 503 immediately (fail fast > unbounded
+        # latency) — this is the "overload protection" line in the write-up.
+        maxPendingRequests: 50
+        # Retries budget per request (mesh retries, independent of app
+        # retries). Kept low on purpose: retry storms amplify outages.
+        maxRetries: 3
+        # A request waiting longer than this in the queue is failed rather
+        # than adding to the latency tail.
+        maxConnectionPools: 10
+    outlierDetection:
+      # CIRCUIT BREAKER: ejection on 5 consecutive 5xx from ONE pod. Istio
+      # load-balances round-robin, so a healthy replica keeps serving while
+      # the sick one is ejected — exactly the behaviour observed during the
+      # pod-failure experiment (error rate spikes briefly, then plateaus).
+      consecutive5xxErrors: 5
+      # Re-evaluate every 10s...
+      interval: 10s
+      # ...and keep an ejected pod out for 30s before giving it a probe
+      # request (5xx during ejection count toward the next ejection).
+      baseEjectionTime: 30s
+      # Never eject more than half the pool — the service as a whole stays
+      # partially available even under a systemic fault.
+      maxEjectionPercent: 50
+      # Treat gateway/transport errors (connect failures, resets) like 5xx
+      # so ejection also covers "pod alive but not accepting".
+      consecutiveGatewayErrors: 5
+  subsets:
+    - name: v1
+      labels:
+        version: v1
+---
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: product-service
+  namespace: ecommerce
+  labels:
+    app: product-service
+spec:
+  host: product-service
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http2MaxRequests: 100
+        maxRequestsPerConnection: 10
+        maxPendingRequests: 50
+        maxRetries: 3
+        maxConnectionPools: 10
+    outlierDetection:
+      # product-service is the chaos target, so keep these values as the
+      # documented baseline; the abort/delay experiments are measured
+      # against them.
+      consecutive5xxErrors: 5
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+      consecutiveGatewayErrors: 5
+  subsets:
+    - name: v1
+      labels:
+        version: v1
+    - name: v2
+      # Canary subset for k8s/product-service-v2.yaml; never routed to
+      # unless the weighted VirtualService is enabled.
+      labels:
+        version: v2
+---
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: order-service
+  namespace: ecommerce
+  labels:
+    app: order-service
+spec:
+  host: order-service
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http2MaxRequests: 100
+        maxRequestsPerConnection: 10
+        maxPendingRequests: 50
+        maxRetries: 3
+        maxConnectionPools: 10
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+      consecutiveGatewayErrors: 5
+  subsets:
+    - name: v1
+      labels:
+        version: v1
+---
+apiVersion: networking.istio.io/v1
+kind: DestinationRule
+metadata:
+  name: ops-service
+  namespace: ecommerce
+  labels:
+    app: ops-service
+spec:
+  host: ops-service
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http2MaxRequests: 100
+        maxRequestsPerConnection: 10
+        maxPendingRequests: 50
+        maxRetries: 3
+        maxConnectionPools: 10
+    outlierDetection:
+      consecutive5xxErrors: 5
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50
+      consecutiveGatewayErrors: 5
+  subsets:
+    - name: v1
+      labels:
+        version: v1

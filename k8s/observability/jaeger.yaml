@@ -1,0 +1,104 @@
+# ===========================================================================
+# Jaeger all-in-one (in-cluster) — trace storage + UI.
+#   kubectl apply -f k8s/observability/jaeger.yaml
+# Reach the UI:
+#   kubectl -n observability port-forward svc/jaeger 16686:16686
+#   open http://localhost:16686
+# (Or add a NodePort as described in k8s/README.md.)
+# ===========================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: observability
+  labels:
+    app: jaeger
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jaeger
+  template:
+    metadata:
+      labels:
+        app: jaeger
+        app.kubernetes.io/part-of: resilience-lab
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: jaeger
+          # All-in-one: collector + storage + UI in a single pod. Perfect
+          # for the lab; production would split collector/ingester/query and
+          # use Cassandra/Elasticsearch storage.
+          image: jaegertracing/all-in-one:1.57
+          env:
+            - name: COLLECTOR_OTLP_ENABLED
+              value: "true" # enable native OTLP gRPC :4317 / HTTP :4318
+            - name: SPAN_STORAGE_TYPE
+              value: memory # simplest lab storage; spans age out via limit
+            - name: MEMORY_MAX_TRACES
+              value: "50000"
+          ports:
+            - name: ui
+              containerPort: 16686
+            - name: otlp-grpc
+              containerPort: 4317
+            - name: otlp-http
+              containerPort: 4318
+            - name: admin
+              containerPort: 14269 # health endpoint used below
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 256Mi # keep the lab light; traces age out quickly
+          readinessProbe:
+            httpGet:
+              path: /
+              port: ui
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: admin
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          securityContext:
+            allowPrivilegeEscalation: false
+            # NOT read-only: Badger (ephemeral) and the span buffer write to
+            # /tmp inside the container.
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: observability
+  labels:
+    app: jaeger
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  type: ClusterIP
+  selector:
+    app: jaeger
+  ports:
+    - name: ui
+      port: 16686
+      targetPort: ui
+    - name: otlp-grpc
+      port: 4317
+      targetPort: otlp-grpc
+    - name: otlp-http
+      port: 4318
+      targetPort: otlp-http

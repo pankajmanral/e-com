@@ -1,0 +1,42 @@
+# ===========================================================================
+# Volumes for the ecommerce workloads.
+# --------------------------------------------------------------------------
+# The only stateful spot in the lab is order-service, which persists orders
+# to services/order-service/data/orders.json. In Kubernetes that path is
+# backed by a per-pod emptyDir (declared inline in the Deployment pod spec —
+# emptyDir cannot live in a standalone manifest, that is why the volume
+# block sits in k8s/order-service.yaml and this file documents it):
+#
+#   volumes:
+#     - name: order-data
+#       emptyDir:
+#         sizeLimit: 128Mi
+#   volumeMounts:
+#     - name: order-data
+#       mountPath: /app/services/order-service/data
+#
+# Properties worth calling out in the dissertation:
+#   * emptyDir is per-pod: each replica has its OWN orders.json, and data is
+#     lost on reschedule. Fine for the lab; a production system would use a
+#     PVC + a real database (see docs/INFRA.md "Known trade-offs").
+#   * sizeLimit caps disk abuse during chaos runs (a crash-looping pod cannot
+#     fill the node).
+#   * fsGroup 1000 in the pod securityContext makes the mount writable by the
+#     non-root user the container runs as.
+#
+# If you later want persistence across restarts, replace the inline emptyDir
+# with a PersistentVolumeClaim, e.g.:
+#
+#   apiVersion: v1
+#   kind: PersistentVolumeClaim
+#   metadata:
+#     name: order-data
+#     namespace: ecommerce
+#   spec:
+#     accessModes: ["ReadWriteOnce"]
+#     resources:
+#       requests:
+#         storage: 1Gi
+#
+# (minikube's default storage class provisions hostPath PVCs automatically.)
+# ===========================================================================

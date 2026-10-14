@@ -1,0 +1,191 @@
+# ===========================================================================
+# Prometheus (in-cluster).
+# The ConfigMap embeds observability/prometheus/prometheus.k8s.yml (static
+# in-cluster targets) and observability/prometheus/rules.yaml verbatim.
+#   kubectl apply -f k8s/observability/prometheus.yaml
+# Reach it:
+#   kubectl -n observability port-forward svc/prometheus 9090:9090
+#   open http://localhost:9090
+# (For a NodePort instead: kubectl -n observability patch svc prometheus
+#  -p '{"spec":{"type":"NodePort","ports":[{"port":9090,"nodePort":30090}]}}')
+# ===========================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: observability
+  labels:
+    app: prometheus
+    app.kubernetes.io/part-of: resilience-lab
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+      external_labels:
+        environment: minikube
+
+    rule_files:
+      - /etc/prometheus/rules.yaml
+
+    scrape_configs:
+      # Same metric names + `service` label from every service, so one job
+      # covers all four. (A production setup would use the Prometheus
+      # Operator with service discovery instead of these static targets.)
+      - job_name: services
+        metrics_path: /metrics
+        static_configs:
+          - targets:
+              - user-service.ecommerce.svc.cluster.local:4001
+              - product-service.ecommerce.svc.cluster.local:4002
+              - order-service.ecommerce.svc.cluster.local:4003
+              - ops-service.ecommerce.svc.cluster.local:4004
+
+      - job_name: otel-collector
+        static_configs:
+          - targets:
+              - otel-collector.observability.svc.cluster.local:8889
+
+      - job_name: prometheus
+        static_configs:
+          - targets:
+              - localhost:9090
+
+  rules.yaml: |
+    groups:
+      - name: http-recording-rules
+        interval: 30s
+        rules:
+          - record: http:request_rate
+            expr: sum by (service) (rate(http_requests_total[2m]))
+          - record: http:error_rate
+            expr: |
+              sum by (service) (rate(http_requests_total{status=~"5.."}[2m]))
+              /
+              clamp_min(sum by (service) (rate(http_requests_total[2m])), 0.0001)
+          - record: http:p95_latency_seconds
+            expr: |
+              histogram_quantile(0.95,
+                sum by (service, le) (rate(http_request_duration_seconds_bucket[2m])))
+          - record: http:p50_latency_seconds
+            expr: |
+              histogram_quantile(0.50,
+                sum by (service, le) (rate(http_request_duration_seconds_bucket[2m])))
+
+      - name: resilience-alerts
+        rules:
+          - alert: HighErrorRate
+            expr: http:error_rate > 0.05
+            for: 2m
+            labels:
+              severity: warning
+            annotations:
+              summary: "{{ $labels.service }} error rate above 5%"
+          - alert: HighP95Latency
+            expr: http:p95_latency_seconds > 1.5
+            for: 3m
+            labels:
+              severity: warning
+            annotations:
+              summary: "{{ $labels.service }} p95 latency above 1.5s"
+          - alert: ServiceDown
+            expr: up == 0
+            for: 1m
+            labels:
+              severity: critical
+            annotations:
+              summary: "Scrape target {{ $labels.job }}/{{ $labels.instance }} down"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: observability
+  labels:
+    app: prometheus
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+        app.kubernetes.io/part-of: resilience-lab
+      annotations:
+        # Config changes roll the pod (ConfigMap hash).
+        checksum/config: "prometheus-v1"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000 # make the emptyDir data dir writable for uid 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v2.53.0
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --storage.tsdb.retention.time=6h # lab-sized TSDB
+          ports:
+            - name: http
+              containerPort: 9090
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+              readOnly: true
+            - name: data
+              mountPath: /prometheus
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus-config
+        - name: data
+          emptyDir:
+            sizeLimit: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: observability
+  labels:
+    app: prometheus
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  type: ClusterIP
+  selector:
+    app: prometheus
+  ports:
+    - name: http
+      port: 9090
+      targetPort: http

@@ -1,0 +1,132 @@
+# ===========================================================================
+# user-service — 2 replicas behind a ClusterIP Service.
+#   kubectl apply -f k8s/user-service.yaml
+# ===========================================================================
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: user-service
+  namespace: ecommerce
+  labels:
+    app: user-service
+    app.kubernetes.io/part-of: resilience-lab
+# No default SA: each workload gets its own identity so the mesh (and audit
+# logs) can attribute traffic and API calls per service.
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: user-service
+  namespace: ecommerce
+  labels:
+    app: user-service
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  # Keep at least one pod alive during voluntary disruptions (node drains,
+  # upgrades) — the lab demonstrates this with `kubectl drain` side-by-side
+  # with the chaos experiments, which are INVOLUNTARY and bypass PDBs.
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: user-service
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: ecommerce
+  labels:
+    app: user-service
+    version: v1
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+        version: v1
+        app.kubernetes.io/part-of: resilience-lab
+    spec:
+      serviceAccountName: user-service
+      terminationGracePeriodSeconds: 10
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: user-service
+          image: ecommerce/user-service:1.0.0
+          imagePullPolicy: IfNotPresent # loaded via `minikube image load`
+          ports:
+            - name: http
+              containerPort: 4001
+          env:
+            - name: PORT
+              value: "4001"
+            - name: DEPLOYMENT_ENV
+              value: k8s
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=384"
+          envFrom:
+            - configMapRef:
+                name: ecommerce-config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false # pino + node write temp files
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: ecommerce
+  labels:
+    app: user-service
+    app.kubernetes.io/part-of: resilience-lab
+spec:
+  type: ClusterIP
+  selector:
+    app: user-service
+  ports:
+    - name: http
+      port: 4001
+      targetPort: http

@@ -1,0 +1,22 @@
+# ===========================================================================
+# POINTER STUB — the canonical pod-failure experiment lives at:
+#
+#     chaos/experiments/pod-failure.yaml
+#
+# chaos/experiments/ is the single source of truth for Chaos Mesh manifests
+# in this repo (decision recorded in docs/INFRA.md) so the admin dashboard,
+# the scripts and the dissertation appendix all reference one file. Apply it
+# from there:
+#
+#     kubectl apply -f chaos/experiments/pod-failure.yaml
+#     kubectl delete -f chaos/experiments/pod-failure.yaml
+#
+# or use the wrapper (checks kubectl context against CHAOS_ALLOW_PATTERN
+# first, exactly like the ops-service admin dashboard does):
+#
+#     scripts/chaos-start.ps1  -Type pod-failure -Service product-service -Duration 60s
+#     scripts/chaos-stop.ps1   -Type pod-failure
+#
+# This file intentionally contains NO manifest: do not kubectl-apply it.
+# See chaos/experiments/pod-failure.yaml for the full, commented PodChaos.
+# ===========================================================================

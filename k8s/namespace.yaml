@@ -1,0 +1,15 @@
+# ===========================================================================
+# Namespace for the business applications + storefront.
+# istio-injection=enabled makes istiod inject an Envoy sidecar into every
+# pod in this namespace (that sidecar is what gives us retries, timeouts,
+# circuit breaking and fault injection at the mesh layer).
+# Apply BEFORE anything that targets the ecommerce namespace:
+#   kubectl apply -f k8s/namespace.yaml
+# ===========================================================================
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ecommerce
+  labels:
+    istio-injection: enabled
+    app.kubernetes.io/part-of: resilience-lab

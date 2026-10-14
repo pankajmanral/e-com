@@ -1,0 +1,225 @@
+# ===========================================================================
+# Service-Mesh Resilience Lab — full stack on plain Docker Compose
+# --------------------------------------------------------------------------
+# Brings up the complete observability lab WITHOUT Kubernetes/Istio:
+#   storefront + 4 microservices + OpenTelemetry collector + Jaeger +
+#   Prometheus + Grafana. (For the real service-mesh lab use Minikube + Istio
+#   — see docs/INFRA.md and k8s/.)
+#
+#   docker compose up -d --build
+#   docker compose down            # stop (keep data volumes)
+#   docker compose down -v         # stop and wipe Prometheus/Grafana data
+#
+# UIs / endpoints once healthy:
+#   Storefront + admin dashboard  http://localhost:3000
+#   user-service                  http://localhost:4001/api/users
+#   product-service               http://localhost:4002/api/products
+#   order-service                 http://localhost:4003/api/orders
+#   ops-service                   http://localhost:4004/api/ops
+#   Jaeger UI (traces)            http://localhost:16686
+#   Prometheus (metrics)          http://localhost:9090
+#   Grafana (dashboards)          http://localhost:3001   (anonymous viewer)
+#   OTLP gRPC / HTTP receivers    localhost:4317 / localhost:4318
+#   Collector self-metrics        localhost:8889/metrics
+#
+# Notes:
+#   * Inside this compose network the Prometheus URL for the ops-service is
+#     http://prometheus:9090 (the host mapping is 9090->9090 anyway).
+#   * The compose-specific Prometheus scrape config lives at
+#     observability/prometheus/prometheus.compose.yml and targets the compose
+#     service names user/product/order/ops. The in-cluster variant is
+#     observability/prometheus/prometheus.k8s.yml.
+#   * Chaos experiments are DISABLED here (CHAOS_MODE=local still allows the
+#     per-service /internal/fault endpoints guarded by FAULT_INJECTION_ENABLED).
+#     Full Chaos Mesh only runs in the Minikube lab.
+# ===========================================================================
+
+name: resilience-lab
+
+services:
+  # ----------------------------------------------------------- business apps
+  user:
+    build:
+      context: .
+      dockerfile: services/user-service/Dockerfile
+    image: ecommerce/user-service:1.0.0
+    environment:
+      NODE_ENV: production
+      PORT: "4001"
+      DEPLOYMENT_ENV: compose
+      CORS_ORIGIN: http://localhost:3000
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_TRACES_EXPORTER: otlp
+      FAULT_INJECTION_ENABLED: "false"
+    ports:
+      - "4001:4001"
+    restart: unless-stopped
+
+  product:
+    build:
+      context: .
+      dockerfile: services/product-service/Dockerfile
+    image: ecommerce/product-service:1.0.0
+    environment:
+      NODE_ENV: production
+      PORT: "4002"
+      DEPLOYMENT_ENV: compose
+      CORS_ORIGIN: http://localhost:3000
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_TRACES_EXPORTER: otlp
+      FAULT_INJECTION_ENABLED: "false"
+    ports:
+      - "4002:4002"
+    restart: unless-stopped
+
+  order:
+    build:
+      context: .
+      dockerfile: services/order-service/Dockerfile
+    image: ecommerce/order-service:1.0.0
+    environment:
+      NODE_ENV: production
+      PORT: "4003"
+      DEPLOYMENT_ENV: compose
+      CORS_ORIGIN: http://localhost:3000
+      USER_SERVICE_URL: http://user:4001
+      PRODUCT_SERVICE_URL: http://product:4002
+      OPS_SERVICE_URL: http://ops:4004
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_TRACES_EXPORTER: otlp
+      FAULT_INJECTION_ENABLED: "false"
+    ports:
+      - "4003:4003"
+    restart: unless-stopped
+
+  ops:
+    build:
+      context: .
+      dockerfile: services/ops-service/Dockerfile
+    image: ecommerce/ops-service:1.0.0
+    environment:
+      NODE_ENV: production
+      PORT: "4004"
+      DEPLOYMENT_ENV: compose
+      CORS_ORIGIN: http://localhost:3000
+      # Compose DNS names of the business services, comma separated.
+      SERVICES: "user-service:4001,product-service:4002,order-service:4003"
+      PROMETHEUS_URL: http://prometheus:9090
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_TRACES_EXPORTER: otlp
+      FAULT_INJECTION_ENABLED: "false"
+      # Chaos Mesh is Kubernetes-only; compose mode keeps the safe local
+      # fault-injection endpoints as the sole degradation mechanism.
+      CHAOS_ENABLED: "false"
+      CHAOS_MODE: local
+    ports:
+      - "4004:4004"
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    image: ecommerce/web:1.0.0
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: 0.0.0.0
+      # Next.js API proxies — point at the compose service DNS names.
+      SERVICES_USER_URL: http://user:4001
+      SERVICES_PRODUCT_URL: http://product:4002
+      SERVICES_ORDER_URL: http://order:4003
+      SERVICES_OPS_URL: http://ops:4004
+      # Browser-facing trace viewer link shown on order detail pages.
+      JAEGER_URL: http://localhost:16686
+    ports:
+      - "3000:3000"
+    depends_on:
+      - user
+      - product
+      - order
+      - ops
+    restart: unless-stopped
+
+  # ------------------------------------------------------------ observability
+  otel-collector:
+    # Pinned contrib build — includes the OTLP receiver, batch/memory_limiter
+    # processors and the prometheus exporter used for self-observation.
+    image: otel/opentelemetry-collector-contrib:0.115.0
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./observability/otel-collector/otel-collector.yaml:/etc/otelcol/config.yaml:ro
+    environment:
+      DEPLOYMENT_ENV: compose
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "8889:8889"   # collector self-metrics (prometheus exporter)
+    depends_on:
+      - jaeger
+    restart: unless-stopped
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    environment:
+      # Enable the native OTLP receivers (gRPC 4317 / HTTP 4318) so the
+      # collector can forward spans via the standard OTLP protocol.
+      COLLECTOR_OTLP_ENABLED: "true"
+      # In-memory span store is enough for the lab; add SPAN_STORAGE_TYPE
+      # + volumes for persistent storage.
+      MEMORY_MAX_TRACES: "20000"
+    ports:
+      - "16686:16686" # Jaeger UI
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    volumes:
+      # Compose-specific scrape config: targets user/product/order/ops.
+      - ./observability/prometheus/prometheus.compose.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prometheus/rules.yaml:/etc/prometheus/rules.yaml:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      # Override with GRAFANA_ADMIN_PASSWORD in a .env file for anything
+      # beyond a local lab.
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_AUTH_DISABLE_LOGIN_FORM: "false"
+      # Used by the provisioned datasource (see datasources.yaml).
+      PROMETHEUS_URL: http://prometheus:9090
+      JAEGER_URL: http://jaeger:16686
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3001:3000"  # 3001 on the host so it never clashes with the web app
+    depends_on:
+      - prometheus
+      - jaeger
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health >/dev/null 2>&1 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  prometheus-data:
+  grafana-data:
