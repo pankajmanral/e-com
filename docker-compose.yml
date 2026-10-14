@@ -20,7 +20,6 @@
 #   Prometheus (metrics)          http://localhost:9090
 #   Grafana (dashboards)          http://localhost:3001   (anonymous viewer)
 #   OTLP gRPC / HTTP receivers    localhost:4317 / localhost:4318
-#   Collector self-metrics        localhost:8889/metrics
 #
 # Notes:
 #   * Inside this compose network the Prometheus URL for the ops-service is
@@ -48,7 +47,7 @@ services:
       PORT: "4001"
       DEPLOYMENT_ENV: compose
       CORS_ORIGIN: http://localhost:3000
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_TRACES_EXPORTER: otlp
       FAULT_INJECTION_ENABLED: "false"
     ports:
@@ -65,7 +64,7 @@ services:
       PORT: "4002"
       DEPLOYMENT_ENV: compose
       CORS_ORIGIN: http://localhost:3000
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_TRACES_EXPORTER: otlp
       FAULT_INJECTION_ENABLED: "false"
     ports:
@@ -85,7 +84,7 @@ services:
       USER_SERVICE_URL: http://user:4001
       PRODUCT_SERVICE_URL: http://product:4002
       OPS_SERVICE_URL: http://ops:4004
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_TRACES_EXPORTER: otlp
       FAULT_INJECTION_ENABLED: "false"
     ports:
@@ -105,7 +104,7 @@ services:
       # Compose DNS names of the business services, comma separated.
       SERVICES: "user-service:4001,product-service:4002,order-service:4003"
       PROMETHEUS_URL: http://prometheus:9090
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
       OTEL_TRACES_EXPORTER: otlp
       FAULT_INJECTION_ENABLED: "false"
       # Chaos Mesh is Kubernetes-only; compose mode keeps the safe local
@@ -144,23 +143,9 @@ services:
     restart: unless-stopped
 
   # ------------------------------------------------------------ observability
-  otel-collector:
-    # Pinned contrib build — includes the OTLP receiver, batch/memory_limiter
-    # processors and the prometheus exporter used for self-observation.
-    image: otel/opentelemetry-collector-contrib:0.115.0
-    command: ["--config=/etc/otelcol/config.yaml"]
-    volumes:
-      - ./observability/otel-collector/otel-collector.yaml:/etc/otelcol/config.yaml:ro
-    environment:
-      DEPLOYMENT_ENV: compose
-    ports:
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
-      - "8889:8889"   # collector self-metrics (prometheus exporter)
-    depends_on:
-      - jaeger
-    restart: unless-stopped
-
+  # Traces flow directly to Jaeger's native OTLP receiver (HTTP 4318 / gRPC 4317),
+  # so no separate collector container is needed. Jaeger all-in-one is still started
+  # with COLLECTOR_OTLP_ENABLED=true to accept spans from the services.
   jaeger:
     image: jaegertracing/all-in-one:1.57
     environment:
