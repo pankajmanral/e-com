@@ -33,7 +33,7 @@ ENV HOSTNAME=0.0.0.0
 
 # Standalone output carries the whole traced dependency tree; the monorepo
 # layout means server.js sits under apps/web/.
-COPY --from=build /app/apps/web/.next ./
+COPY --from=build /app/apps/web/.next/standalone ./
 # Next.js requires static assets and public/ next to server.js at runtime.
 COPY --from=build /app/apps/web/.next/static apps/web/.next/static
 COPY --from=build /app/stage/public apps/web/public

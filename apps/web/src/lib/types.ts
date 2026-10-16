@@ -22,7 +22,7 @@ export interface Product {
   name: string;
   description: string;
   category: ProductCategory;
-  /** GBP amount. */
+  /** INR amount. */
   price: number;
   currency: string;
   stock: number;

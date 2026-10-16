@@ -537,7 +537,7 @@ export default function ChaosPanel({
                 </div>
                 <div className="flex items-center gap-3 text-xs text-navy-500 tabular-nums">
                   <span>{experiment.durationSec}s</span>
-                  <span title={new Date(experiment.startedAt).toLocaleString('en-GB')}>
+                  <span title={new Date(experiment.startedAt).toLocaleString('en-IN')}>
                     {formatClockTime(experiment.startedAt)}
                   </span>
                 </div>

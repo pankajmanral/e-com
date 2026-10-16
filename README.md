@@ -68,8 +68,10 @@ Observability side-car of every service:
 
 1. `order-service` resolves/creates the customer via `user-service` (`POST /api/users/resolve`).
 2. It fetches live prices and stock from `product-service`.
-3. It computes totals (8 % tax, free shipping over £100), charges a mock card gateway
+3. It computes totals in INR (8 % tax, free shipping over ₹11,000), charges a mock card gateway
    (test card `4242 4242 4242 4242` approves, `4000 0000 0000 0002` declines).
+   Demo prices use a fixed project rate of ₹110 per pound sterling; this is not a live exchange
+   rate.
 4. It reserves stock (`POST /api/products/stock/deduct` — atomic per item, with a compensating
    restore if anything fails afterwards).
 5. It persists the order to the datastore (**MongoDB** when configured, a JSON file otherwise)

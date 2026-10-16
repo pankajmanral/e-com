@@ -7,7 +7,7 @@ import ProductImage from '@/components/product/ProductImage';
 import { useCart } from '@/lib/cart';
 import { formatPrice } from '@/lib/format';
 
-const FREE_SHIPPING_THRESHOLD = 100;
+const FREE_SHIPPING_THRESHOLD = 11_000;
 
 /** Client view of the cart — state lives in the CartProvider (localStorage). */
 export default function CartView() {
@@ -65,7 +65,7 @@ export default function CartView() {
     );
   }
 
-  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 6.95;
+  const shipping = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 764.5;
   const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
 
   return (
@@ -189,7 +189,7 @@ export default function CartView() {
           {remainingForFreeShipping > 0 ? (
             <p className="mt-3 rounded-lg bg-navy-50 px-3 py-2 text-xs text-navy-600">
               Add <span className="font-semibold text-navy-900">{formatPrice(remainingForFreeShipping)}</span> more
-              to qualify for free shipping (free over £100).
+              to qualify for free shipping (free over ₹11,000).
             </p>
           ) : (
             <p className="mt-3 rounded-lg bg-teal-50 px-3 py-2 text-xs font-medium text-teal-700">

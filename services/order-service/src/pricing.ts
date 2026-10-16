@@ -4,14 +4,14 @@
  *
  *   lineTotal = unitPrice * quantity          (rounded to 2dp)
  *   subtotal  = Σ lineTotals
- *   shipping  = 0 when subtotal >= £100, otherwise £6.95
+ *   shipping  = 0 when subtotal >= ₹11,000, otherwise ₹764.50
  *   tax       = 8% of subtotal (rounded to 2dp)
  *   total     = subtotal + shipping + tax     (rounded to 2dp)
  */
 
-export const CURRENCY = 'GBP';
-export const FREE_SHIPPING_THRESHOLD = 100;
-export const STANDARD_SHIPPING_COST = 6.95;
+export const CURRENCY = 'INR';
+export const FREE_SHIPPING_THRESHOLD = 11_000;
+export const STANDARD_SHIPPING_COST = 764.5;
 export const TAX_RATE = 0.08;
 
 /** Round to 2 decimal places (half-up), the way money should be rounded. */

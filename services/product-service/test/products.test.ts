@@ -73,13 +73,13 @@ describe('product-service API', () => {
     const asc = await request(app).get('/api/products?sort=price-asc&perPage=48');
     expect(asc.status).toBe(200);
     const ascPrices: number[] = asc.body.items.map((item: { price: number }) => item.price);
-    expect(ascPrices[0]).toBe(19.99);
+    expect(ascPrices[0]).toBe(2198.9);
     expect([...ascPrices].sort((a, b) => a - b)).toEqual(ascPrices);
 
     const desc = await request(app).get('/api/products?sort=price-desc&perPage=48');
     expect(desc.status).toBe(200);
     const descPrices: number[] = desc.body.items.map((item: { price: number }) => item.price);
-    expect(descPrices[0]).toBe(899);
+    expect(descPrices[0]).toBe(98890);
     expect([...descPrices].sort((a, b) => b - a)).toEqual(descPrices);
   });
 
@@ -105,8 +105,8 @@ describe('product-service API', () => {
     const audio = res.body.find((category: { slug: string }) => category.slug === 'audio');
     expect(audio.name).toBe('Audio');
     expect(audio.count).toBe(5);
-    expect(audio.priceRange.min).toBe(69.99);
-    expect(audio.priceRange.max).toBe(349);
+    expect(audio.priceRange.min).toBe(7698.9);
+    expect(audio.priceRange.max).toBe(38390);
     const totalCount: number = res.body.reduce(
       (sum: number, category: { count: number }) => sum + category.count,
       0,

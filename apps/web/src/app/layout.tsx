@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import Link from 'next/link';
+import './globals.css';
 import { CartProvider } from '@/lib/cart';
 import Footer from '@/components/site/Footer';
 import Header from '@/components/site/Header';
@@ -19,7 +20,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en-GB">
+    <html lang="en-IN">
       <body className="flex min-h-screen flex-col bg-white text-navy-800 antialiased">
         <CartProvider>
           <a

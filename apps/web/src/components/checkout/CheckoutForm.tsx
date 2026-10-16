@@ -17,8 +17,8 @@ import { Spinner } from '@/components/ui/Spinner';
 import ProductImage from '@/components/product/ProductImage';
 import type { ApiErrorBody, Order, PaymentMethod } from '@/lib/types';
 
-const FREE_SHIPPING_THRESHOLD = 100;
-const SHIPPING_FLAT = 6.95;
+const FREE_SHIPPING_THRESHOLD = 11_000;
+const SHIPPING_FLAT = 764.5;
 const TAX_RATE = 0.08;
 
 interface FormState {
@@ -45,7 +45,7 @@ const initialForm: FormState = {
   line2: '',
   city: '',
   postalCode: '',
-  country: 'United Kingdom',
+  country: 'India',
   method: 'card',
   cardholderName: '',
   cardNumber: '',
@@ -76,8 +76,8 @@ function validate(form: FormState): FieldErrors {
   if (!form.city.trim()) errors.city = 'Enter your town or city.';
   if (!form.postalCode.trim()) {
     errors.postalCode = 'Enter your postal code.';
-  } else if (!/^[A-Za-z0-9 ]{5,9}$/.test(form.postalCode.trim().replace(/\s+/g, ''))) {
-    errors.postalCode = 'Enter a valid UK postal code.';
+  } else if (!/^\d{6}$/.test(form.postalCode.trim())) {
+    errors.postalCode = 'Enter a valid 6-digit Indian PIN code.';
   }
   if (!form.country.trim()) errors.country = 'Enter your country.';
 
@@ -371,7 +371,7 @@ export default function CheckoutForm() {
               aria-invalid={Boolean(errors.phone)}
               aria-describedby={errors.phone ? 'phone-error' : undefined}
               className={inputClass(Boolean(errors.phone))}
-              placeholder="+44 7700 900000"
+              placeholder="+91 98765 43210"
             />
           </Field>
         </fieldset>
@@ -417,7 +417,7 @@ export default function CheckoutForm() {
                 aria-invalid={Boolean(errors.city)}
                 aria-describedby={errors.city ? 'city-error' : undefined}
                 className={inputClass(Boolean(errors.city))}
-                placeholder="Bristol"
+                placeholder="Mumbai"
               />
             </Field>
             <Field id="postalCode" label="Postal code" error={errors.postalCode} required autoComplete="postal-code">
@@ -431,7 +431,7 @@ export default function CheckoutForm() {
                 aria-invalid={Boolean(errors.postalCode)}
                 aria-describedby={errors.postalCode ? 'postalCode-error' : undefined}
                 className={inputClass(Boolean(errors.postalCode))}
-                placeholder="BS1 4ST"
+                placeholder="400001"
               />
             </Field>
             <Field id="country" label="Country" error={errors.country} required autoComplete="country-name">
@@ -611,7 +611,7 @@ export default function CheckoutForm() {
           </dl>
 
           <p className="mt-3 text-xs text-navy-500">
-            Shipping is free on orders over £100; otherwise a flat £6.95 applies.
+            Shipping is free on orders over ₹11,000; otherwise a flat ₹764.50 applies.
           </p>
 
           <div className="mt-5 hidden lg:block">

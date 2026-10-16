@@ -1,25 +1,25 @@
 /**
- * Formatting helpers. Money is always rendered GBP via Intl.NumberFormat('en-GB').
+ * Formatting helpers. Money is rendered in Indian rupees with Indian number grouping.
  */
 
-const gbpFormatters = new Map<string, Intl.NumberFormat>();
+const currencyFormatters = new Map<string, Intl.NumberFormat>();
 
 function getFormatter(currency: string): Intl.NumberFormat {
-  let formatter = gbpFormatters.get(currency);
+  let formatter = currencyFormatters.get(currency);
   if (!formatter) {
-    formatter = new Intl.NumberFormat('en-GB', {
+    formatter = new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
-    gbpFormatters.set(currency, formatter);
+    currencyFormatters.set(currency, formatter);
   }
   return formatter;
 }
 
-/** Format a monetary amount, e.g. formatPrice(1234.5) → "£1,234.50". */
-export function formatPrice(amount: number, currency = 'GBP'): string {
+/** Format a monetary amount, e.g. formatPrice(1234.5) → "₹1,234.50". */
+export function formatPrice(amount: number, currency = 'INR'): string {
   if (!Number.isFinite(amount)) return '—';
   return getFormatter(currency).format(amount);
 }
@@ -33,7 +33,7 @@ export function formatPercent(ratio: number, fractionDigits = 1): string {
 /** Format a plain number with grouping, e.g. formatNumber(1234.56, 1) → "1,234.6". */
 export function formatNumber(value: number, fractionDigits = 0): string {
   if (!Number.isFinite(value)) return '—';
-  return new Intl.NumberFormat('en-GB', {
+  return new Intl.NumberFormat('en-IN', {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
   }).format(value);
@@ -45,7 +45,7 @@ export function formatRelativeTime(iso: string, now: Date = new Date()): string 
   if (Number.isNaN(then.getTime())) return '—';
   const diffMs = then.getTime() - now.getTime();
   const absMs = Math.abs(diffMs);
-  const rtf = new Intl.RelativeTimeFormat('en-GB', { numeric: 'auto' });
+  const rtf = new Intl.RelativeTimeFormat('en-IN', { numeric: 'auto' });
 
   const minute = 60_000;
   const hour = 60 * minute;
@@ -67,7 +67,7 @@ export function timeAgo(iso: string): string {
 export function formatClockTime(iso: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleTimeString('en-GB', {
+  return date.toLocaleTimeString('en-IN', {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',

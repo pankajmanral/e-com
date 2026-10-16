@@ -133,7 +133,7 @@ export class OrderStore {
       totalOrders: orders.length,
       totalRevenue: roundedRevenue,
       averageOrderValue: orders.length > 0 ? Math.round((roundedRevenue / orders.length) * 100) / 100 : 0,
-      currency: 'GBP',
+      currency: 'INR',
     };
   }
 }

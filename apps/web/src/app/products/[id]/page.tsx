@@ -173,8 +173,8 @@ export default async function ProductDetailPage({
               <div>
                 <h2 className="text-sm font-semibold text-navy-900">Delivery</h2>
                 <p className="mt-1 text-sm leading-relaxed text-navy-600">
-                  Arrives in 3–5 working days. Free tracked shipping on orders over £100,
-                  otherwise £6.95.
+                  Arrives in 3–5 working days. Free tracked shipping on orders over ₹11,000,
+                  otherwise ₹764.50.
                 </p>
               </div>
             </div>

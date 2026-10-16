@@ -11,7 +11,7 @@ export const CATEGORIES: { slug: ProductCategory; name: string }[] = [
 
 /**
  * Realistic consumer-electronics catalogue seed (24 products, 3-6 per category,
- * prices spanning £19.99 - £899.00). `image` points at `/img/<slug>` — the Next.js
+ * prices spanning ₹2,198.90 - ₹98,890.00). `image` points at `/img/<slug>` — the Next.js
  * app serves a generated SVG illustration at that path.
  */
 export const SEED_PRODUCTS: Product[] = [
@@ -23,8 +23,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'Over-ear headphones with adaptive noise cancelling and a 40-hour battery life. The Aurora pairs plush memory-foam earcups with dual drivers tuned for a warm, detailed sound. Multipoint Bluetooth 5.3 lets you hop between laptop and phone without missing a beat.',
     category: 'audio',
-    price: 179.99,
-    currency: 'GBP',
+    price: 19798.9,
+    currency: 'INR',
     stock: 84,
     rating: 4.7,
     reviewCount: 312,
@@ -39,8 +39,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'A rugged, IP67 waterproof speaker that survives pool days and festival mud. Twenty-four hours of playtime, punchy bass radiators and a carabiner loop make it the campsite favourite. Pair two units for true stereo sound anywhere.',
     category: 'audio',
-    price: 69.99,
-    currency: 'GBP',
+    price: 7698.9,
+    currency: 'INR',
     stock: 142,
     rating: 4.5,
     reviewCount: 480,
@@ -55,8 +55,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'Featherweight earbuds with hybrid noise cancelling tuned for commutes and open-plan offices. Six microphones keep calls crisp on windy streets, and the case adds 28 hours of total playtime. Wireless charging and IPX5 sweat resistance round out the package.',
     category: 'audio',
-    price: 89.99,
-    currency: 'GBP',
+    price: 9898.9,
+    currency: 'INR',
     stock: 5,
     rating: 4.3,
     reviewCount: 226,
@@ -71,8 +71,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'A pair of active nearfield monitors with 5-inch woofers and balanced TRS inputs for the home studio. The flat response curve keeps mixes honest while the front ports keep bass tight at volume. Aluminium cabinets damp resonance for clean, uncoloured playback.',
     category: 'audio',
-    price: 349.0,
-    currency: 'GBP',
+    price: 38390,
+    currency: 'INR',
     stock: 32,
     rating: 4.6,
     reviewCount: 87,
@@ -87,8 +87,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'A belt-drive turntable with a built-in phono preamp and Bluetooth streaming to any speaker. The carbon-fibre tonearm tracks gently on precious records while the heavy platter keeps speed rock steady. Line and optical outputs make it easy to join a modern hi-fi.',
     category: 'audio',
-    price: 249.99,
-    currency: 'GBP',
+    price: 27498.9,
+    currency: 'INR',
     stock: 41,
     rating: 4.4,
     reviewCount: 156,
@@ -105,8 +105,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'The Pulse Smartwatch 2 tracks over one hundred workouts, sleep stages and heart-rate zones with dual-band GPS. A brighter AMOLED display and ten-day battery keep it useful from Monday meetings to weekend trail runs. 5ATM water resistance and NFC payments complete the package.',
     category: 'wearables',
-    price: 299.0,
-    currency: 'GBP',
+    price: 32890,
+    currency: 'INR',
     stock: 96,
     rating: 4.8,
     reviewCount: 421,
@@ -121,8 +121,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'An ultralight fitness band for step counting, sleep scoring and smartphone notifications. The ten-day battery and soft silicone strap make it easy to forget you are wearing it. A great entry point for anyone starting a new habit.',
     category: 'wearables',
-    price: 49.99,
-    currency: 'GBP',
+    price: 5498.9,
+    currency: 'INR',
     stock: 178,
     rating: 4.2,
     reviewCount: 389,
@@ -137,8 +137,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'A pared-back GPS watch built for runners who want data, not distractions. It locks onto satellites in seconds and shows pace, splits and recovery time on a sunlight-readable screen. Battery lasts fourteen hours with GPS on for the longest training weeks.',
     category: 'wearables',
-    price: 129.99,
-    currency: 'GBP',
+    price: 14298.9,
+    currency: 'INR',
     stock: 3,
     rating: 4.1,
     reviewCount: 64,
@@ -153,8 +153,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'A titanium smart ring that measures sleep, recovery and temperature trends overnight. The Halo pairs with your phone to turn last night’s data into a simple readiness score. Weighing under four grams, you will barely notice it in bed.',
     category: 'wearables',
-    price: 219.99,
-    currency: 'GBP',
+    price: 24198.9,
+    currency: 'INR',
     stock: 58,
     rating: 4.5,
     reviewCount: 143,
@@ -169,8 +169,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'A lightweight vest with three carbon-fibre heating zones and a ten-hour battery. Layer it under a coat in winter or wear it alone on blustery days. The water-repellent shell and machine-washable design make it easy to live with.',
     category: 'wearables',
-    price: 99.99,
-    currency: 'GBP',
+    price: 10998.9,
+    currency: 'INR',
     stock: 67,
     rating: 4.0,
     reviewCount: 52,
@@ -187,8 +187,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'One pad for phone, watch and earbuds at once — no more cable spaghetti on the nightstand. Optimised 15W charging keeps gadgets topped up overnight while thermal sensors prevent overheating. The foldable stand doubles as a bedside clock dock.',
     category: 'accessories',
-    price: 79.99,
-    currency: 'GBP',
+    price: 8798.9,
+    currency: 'INR',
     stock: 120,
     rating: 4.4,
     reviewCount: 267,
@@ -203,8 +203,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'A two-metre nylon-braided USB-C cable rated for 100W power delivery and 480Mbps data. Reinforced strain reliefs survive thousands of bends, and the tactile weave resists tangling in bags. Bright colours make it easy to spot on a dark desk.',
     category: 'accessories',
-    price: 19.99,
-    currency: 'GBP',
+    price: 2198.9,
+    currency: 'INR',
     stock: 200,
     rating: 4.6,
     reviewCount: 458,
@@ -219,8 +219,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'A slim sleeve with five millimetres of shock-absorbing foam for 14-inch laptops and tablets. The water-resistant outer shields against drizzle while the soft microfibre lining keeps lids scratch-free. A front pocket swallows chargers, cables and a passport.',
     category: 'accessories',
-    price: 39.99,
-    currency: 'GBP',
+    price: 4398.9,
+    currency: 'INR',
     stock: 91,
     rating: 4.3,
     reviewCount: 132,
@@ -235,8 +235,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'A compact 75% mechanical keyboard with hot-swap sockets, per-key RGB and a gasket-mounted plate. Pre-lubed linear switches feel smooth out of the box, and open firmware lets you remap anything. Connect over USB-C, Bluetooth or the 2.4GHz dongle.',
     category: 'accessories',
-    price: 119.99,
-    currency: 'GBP',
+    price: 13198.9,
+    currency: 'INR',
     stock: 4,
     rating: 4.7,
     reviewCount: 205,
@@ -251,8 +251,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'An ergonomic mouse with a sculpted shape that keeps wrists neutral through long sessions. The 8,000DPI sensor tracks on glass, and quiet clicks keep shared offices peaceful. Switch between three paired devices with a single button.',
     category: 'accessories',
-    price: 44.99,
-    currency: 'GBP',
+    price: 4948.9,
+    currency: 'INR',
     stock: 134,
     rating: 4.2,
     reviewCount: 176,
@@ -269,8 +269,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'A 4K projector with built-in streaming apps and automatic keystone correction. The 2,500-lumen lamp throws a crisp 120-inch picture even with the curtains half open. HDMI 2.1, Wi-Fi 6 and stereo speakers mean one cable is often enough.',
     category: 'home-tech',
-    price: 549.0,
-    currency: 'GBP',
+    price: 60390,
+    currency: 'INR',
     stock: 26,
     rating: 4.5,
     reviewCount: 98,
@@ -285,8 +285,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'Continuous CO2, VOC and particulate sensing with a colour ring that reads at a glance. The Sense nudges you to open a window before a room gets stuffy, and history charts show how the space performs over weeks. A quiet, useful nudge towards healthier rooms.',
     category: 'home-tech',
-    price: 59.99,
-    currency: 'GBP',
+    price: 6598.9,
+    currency: 'INR',
     stock: 110,
     rating: 4.1,
     reviewCount: 84,
@@ -301,8 +301,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'A 2K doorbell camera with a head-to-toe view, colour night vision and two-way audio. Person detection filters out passing cars, and local storage avoids monthly fees. Works with the major voice assistants and most existing chimes.',
     category: 'home-tech',
-    price: 149.99,
-    currency: 'GBP',
+    price: 16498.9,
+    currency: 'INR',
     stock: 73,
     rating: 4.4,
     reviewCount: 310,
@@ -317,8 +317,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'A desk lamp that shifts colour temperature with the sun to keep evenings calm. Flicker-free LEDs and a wide diffuser protect eyes across long reading sessions. The weighted base, touch controls and USB-C port make it a tidy desk upgrade.',
     category: 'home-tech',
-    price: 64.99,
-    currency: 'GBP',
+    price: 7148.9,
+    currency: 'INR',
     stock: 88,
     rating: 4.6,
     reviewCount: 121,
@@ -333,8 +333,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'Four compact smart plugs with energy monitoring for lamps, heaters and coffee machines. Schedule routines, hand control to voice assistants, and see exactly what each device costs to run. The slim bodies leave the second socket free.',
     category: 'home-tech',
-    price: 29.99,
-    currency: 'GBP',
+    price: 3298.9,
+    currency: 'INR',
     stock: 165,
     rating: 4.0,
     reviewCount: 244,
@@ -351,8 +351,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'A palm-sized 65W charger with two USB-C ports and one USB-A for the whole travel kit. GaN internals run cooler than old silicon bricks while juicing a laptop and phone at once. Foldable pins slide into pockets without scratching anything.',
     category: 'mobile',
-    price: 54.99,
-    currency: 'GBP',
+    price: 6048.9,
+    currency: 'INR',
     stock: 149,
     rating: 4.5,
     reviewCount: 189,
@@ -367,8 +367,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'A 20,000mAh power bank that refills a phone three times and a tablet twice. 30W output tops up laptops in a pinch, and the digital readout shows exactly what is left. USB-C in and out means one cable handles charging the bank and your devices.',
     category: 'mobile',
-    price: 34.99,
-    currency: 'GBP',
+    price: 3848.9,
+    currency: 'INR',
     stock: 156,
     rating: 4.3,
     reviewCount: 356,
@@ -383,8 +383,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'A flagship 5G phone with a 6.7-inch 120Hz OLED panel and a triple-camera system led by a 50MP sensor. The Aria vapour chamber keeps gaming sessions cool while 80W charging refills the battery before breakfast. Seven years of OS updates keep it current.',
     category: 'mobile',
-    price: 899.0,
-    currency: 'GBP',
+    price: 98890,
+    currency: 'INR',
     stock: 22,
     rating: 4.9,
     reviewCount: 264,
@@ -399,8 +399,8 @@ export const SEED_PRODUCTS: Product[] = [
     description:
       'A slim magnetic wallet that snaps to the back of any MagSafe phone. The pebbled leather ages nicely while six card slots and RFID shielding keep daily carries tidy. A pull tab fans cards out so the right one is always on top.',
     category: 'mobile',
-    price: 24.99,
-    currency: 'GBP',
+    price: 2748.9,
+    currency: 'INR',
     stock: 187,
     rating: 3.9,
     reviewCount: 76,

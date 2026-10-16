@@ -85,8 +85,8 @@ async function main() {
 
   // 3. checkout happy path ---------------------------------------------------
   const orderPayload = {
-    customer: { fullName: 'Smoke Test', email: `smoke-${Date.now()}@example.com`, phone: '+44 7700 900123' },
-    shippingAddress: { line1: '1 Test Street', city: 'London', postalCode: 'EC1A 1BB', country: 'United Kingdom' },
+    customer: { fullName: 'Smoke Test', email: `smoke-${Date.now()}@example.com`, phone: '+91 98765 43212' },
+    shippingAddress: { line1: '1 Test Street', city: 'Mumbai', postalCode: '400001', country: 'India' },
     items: [
       { productId: first.id, quantity: 2 },
       { productId: list.items[1].id, quantity: 1 },
@@ -106,7 +106,7 @@ async function main() {
     Math.abs(order.subtotal - expectedSubtotal) < 0.01,
     `subtotal ${order.subtotal} (expected ${expectedSubtotal})`,
   );
-  record('order ships free over £100 or charges £6.95', order.shippingCost === 0 || order.shippingCost === 6.95);
+  record('order ships free over ₹11,000 or charges ₹764.50', order.shippingCost === 0 || order.shippingCost === 764.5);
   record('order includes trace id for Jaeger', typeof order.traceId === 'string' && order.traceId.length === 32, order.traceId);
 
   const fetched = await (await fetch(`${ORDER}/api/orders/${order.id}`)).json();
@@ -142,7 +142,7 @@ async function main() {
     body: JSON.stringify({
       fullName: 'Returning Smoke',
       email: 'amelia.hartley@example.com',
-      address: { line1: '18 Marine Parade', city: 'Brighton', postalCode: 'BN2 1TL', country: 'United Kingdom' },
+      address: { line1: '18 Marine Parade', city: 'Mumbai', postalCode: '400001', country: 'India' },
     }),
   });
   record('user resolve returns existing customer', resolved.ok && (await resolved.json()).created === false);

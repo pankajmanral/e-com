@@ -46,8 +46,8 @@ All end-to-end checks including:
 
 ### CSS Styling
 - Tailwind CSS v4 with navy blue (#0b1b36) and teal (#0d8a7e) color palette
-- Production build (`npm.cmd run start`) has full CSS support
-- Development mode (Turbopack) has known limitation - classes present in HTML but `<style>` tags not visibly injected (framework limitation)
+- The root layout imports `globals.css`, so the stylesheet is included in the app.
+- `npm.cmd run build -w @ecommerce/web` succeeds and emits a CSS asset under `.next/static/chunks/`.
 
 ### Run Modes
 
@@ -69,8 +69,8 @@ docker compose up -d --build
 
 #### Development (Turbopack)
 ```powershell
-npm.run dev -w @ecommerce/web
-# Known: Tailwind classes in HTML, styles via runtime injection
+npm.cmd run dev -w @ecommerce/web
+# http://localhost:3000
 ```
 
 ### Project Structure

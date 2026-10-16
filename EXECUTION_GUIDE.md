@@ -252,7 +252,7 @@ curl "http://localhost:4002/api/products?sort=featured&perPage=4"
 ```powershell
 curl -X POST http://localhost:4003/api/orders \
   -H "Content-Type: application/json" \
-  -d '{"customer":{"fullName":"Test","email":"test@example.com","phone":"+44 7700 900123"},"shippingAddress":{"line1":"1 Test St","city":"London","postalCode":"EC1A 1BB","country":"United Kingdom"},"items":[{"productId":"prd-2001","quantity":2}],"payment":{"method":"card","cardholderName":"Test","cardNumber":"4242424242424242","expiryMMYY":"12/29","cvc":"123"}}'
+  -d '{"customer":{"fullName":"Test","email":"test@example.com","phone":"+91 98765 43210"},"shippingAddress":{"line1":"1 Test St","city":"Mumbai","postalCode":"400001","country":"India"},"items":[{"productId":"prd-2001","quantity":2}],"payment":{"method":"card","cardholderName":"Test","cardNumber":"4242424242424242","expiryMMYY":"12/29","cvc":"123"}}'
 ```
 
 ### Payment decline (card ending 0002/0000)
@@ -260,7 +260,7 @@ curl -X POST http://localhost:4003/api/orders \
 ```powershell
 curl -X POST http://localhost:4003/api/orders \
   -H "Content-Type: application/json" \
-  -d '{"customer":{"fullName":"Test","email":"test@example.com"},"shippingAddress":{"line1":"1 Test St","city":"London","postalCode":"EC1A 1BB","country":"United Kingdom"},"items":[{"productId":"prd-2001","quantity":1}],"payment":{"method":"card","cardholderName":"Test","cardNumber":"4000000000000002","expiryMMYY":"12/29","cvc":"123"}}'
+  -d '{"customer":{"fullName":"Test","email":"test@example.com"},"shippingAddress":{"line1":"1 Test St","city":"Mumbai","postalCode":"400001","country":"India"},"items":[{"productId":"prd-2001","quantity":1}],"payment":{"method":"card","cardholderName":"Test","cardNumber":"4000000000000002","expiryMMYY":"12/29","cvc":"123"}}'
 ```
 
 Expect **402 PAYMENT_DECLINED**; no stock should be deducted.

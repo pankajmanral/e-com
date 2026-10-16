@@ -29,7 +29,7 @@ const WINDOWS: MetricWindow[] = ['5m', '15m', '30m'];
 type Row = Record<string, number | null>;
 
 function formatTime(ms: number): string {
-  return new Date(ms).toLocaleTimeString('en-GB', {
+  return new Date(ms).toLocaleTimeString('en-IN', {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',

@@ -19,8 +19,8 @@ const productA: Product = {
   name: 'Aurora Wireless Headphones',
   description: 'Test double for the happy path.',
   category: 'audio',
-  price: 49.99,
-  currency: 'GBP',
+  price: 5498.9,
+  currency: 'INR',
   stock: 10,
   rating: 4.7,
   reviewCount: 120,
@@ -35,8 +35,8 @@ const productB: Product = {
   name: 'Nomad Bluetooth Speaker',
   description: 'Second test double for the happy path.',
   category: 'audio',
-  price: 29.99,
-  currency: 'GBP',
+  price: 3298.9,
+  currency: 'INR',
   stock: 5,
   rating: 4.5,
   reviewCount: 300,
@@ -49,12 +49,12 @@ const fakeUser: User = {
   id: 'usr-1001',
   fullName: 'Amelia Hartley',
   email: 'amelia.hartley@example.com',
-  phone: '+44 7700 900101',
+  phone: '+91 98765 43210',
   address: {
     line1: '18 Marine Parade',
-    city: 'Brighton',
-    postalCode: 'BN2 1TL',
-    country: 'United Kingdom',
+    city: 'Mumbai',
+    postalCode: '400001',
+    country: 'India',
   },
   createdAt: '2024-03-11T09:15:00.000Z',
 };
@@ -130,13 +130,13 @@ const basePayload = {
   customer: {
     fullName: 'Amelia Hartley',
     email: 'amelia.hartley@example.com',
-    phone: '+44 7700 900101',
+    phone: '+91 98765 43210',
   },
   shippingAddress: {
     line1: '18 Marine Parade',
-    city: 'Brighton',
-    postalCode: 'BN2 1TL',
-    country: 'United Kingdom',
+    city: 'Mumbai',
+    postalCode: '400001',
+    country: 'India',
   },
   items: [
     { productId: 'prd-2001', quantity: 1 },
@@ -159,26 +159,26 @@ describe('order-service checkout', () => {
     expect(res.status).toBe(201);
     expect(res.body.id).toMatch(/^ord-/);
     expect(res.body.status).toBe('confirmed');
-    expect(res.body.currency).toBe('GBP');
+    expect(res.body.currency).toBe('INR');
     expect(res.body.userId).toBe('usr-1001');
     expect(res.body.customer).toEqual({
       fullName: 'Amelia Hartley',
       email: 'amelia.hartley@example.com',
     });
 
-    // pricing: 49.99 + 29.99 = 79.98 → +6.95 shipping → +6.40 tax = 93.33
-    expect(res.body.subtotal).toBe(79.98);
-    expect(res.body.shippingCost).toBe(6.95);
-    expect(res.body.tax).toBe(6.4);
-    expect(res.body.total).toBe(93.33);
+    // pricing: ₹5,498.90 + ₹3,298.90 + ₹764.50 shipping + ₹703.82 tax.
+    expect(res.body.subtotal).toBe(8797.8);
+    expect(res.body.shippingCost).toBe(764.5);
+    expect(res.body.tax).toBe(703.82);
+    expect(res.body.total).toBe(10266.12);
 
     expect(res.body.items).toHaveLength(2);
     expect(res.body.items[0]).toEqual({
       productId: 'prd-2001',
       name: 'Aurora Wireless Headphones',
-      unitPrice: 49.99,
+      unitPrice: 5498.9,
       quantity: 1,
-      lineTotal: 49.99,
+      lineTotal: 5498.9,
     });
 
     // trace propagation: header and body carry the same valid trace id
@@ -204,9 +204,9 @@ describe('order-service checkout', () => {
 
     const stats = await request(app).get('/api/orders/stats');
     expect(stats.body.totalOrders).toBe(1);
-    expect(stats.body.totalRevenue).toBe(93.33);
-    expect(stats.body.averageOrderValue).toBe(93.33);
-    expect(stats.body.currency).toBe('GBP');
+    expect(stats.body.totalRevenue).toBe(10266.12);
+    expect(stats.body.averageOrderValue).toBe(10266.12);
+    expect(stats.body.currency).toBe('INR');
 
     expect(store.count()).toBe(1);
   });
@@ -332,6 +332,6 @@ describe('order-service checkout', () => {
     // a brand-new store instance reads the same file back from disk
     const reloaded = new OrderStore({ filePath: file });
     expect(reloaded.count()).toBe(1);
-    expect(reloaded.get(res.body.id)?.total).toBe(93.33);
+    expect(reloaded.get(res.body.id)?.total).toBe(10266.12);
   });
 });

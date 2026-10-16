@@ -41,7 +41,7 @@ describe('user-service API', () => {
       .send({
         fullName: 'Amelia H. Hartley',
         email: 'amelia.hartley@example.com',
-        address: { line1: '19 Marine Parade', city: 'Brighton', postalCode: 'BN2 1TL', country: 'United Kingdom' },
+        address: { line1: '19 Marine Parade', city: 'Mumbai', postalCode: '400001', country: 'India' },
       });
     expect(res.status).toBe(200);
     expect(res.body.created).toBe(false);
@@ -54,7 +54,7 @@ describe('user-service API', () => {
       .send({
         fullName: 'Test Customer',
         email: `test-${Date.now()}@example.com`,
-        address: { line1: '1 Test Way', city: 'Leeds', postalCode: 'LS1 1AA', country: 'United Kingdom' },
+        address: { line1: '1 Test Way', city: 'Delhi', postalCode: '110001', country: 'India' },
       });
     expect(res.status).toBe(201);
     expect(res.body.created).toBe(true);

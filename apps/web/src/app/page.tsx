@@ -9,8 +9,8 @@ export const dynamic = 'force-dynamic';
 
 const features = [
   {
-    title: 'Free shipping over £100',
-    body: 'Tracked UK delivery on every order above £100. Standard delivery £6.95 otherwise.',
+    title: 'Free shipping over ₹11,000',
+    body: 'Tracked delivery across India on every order above ₹11,000. Standard delivery ₹764.50 otherwise.',
     icon: (
       <path d="M3 7h11v10H3zM14 10h4l3 3v4h-7zM7 20a1.75 1.75 0 1 0 0-3.5A1.75 1.75 0 0 0 7 20Zm11 0a1.75 1.75 0 1 0 0-3.5 1.75 1.75 0 0 0 0 3.5Z" />
     ),

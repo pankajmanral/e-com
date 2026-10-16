@@ -17,21 +17,14 @@
 - **MongoDB**: Optional - all services fall back to in-memory/JSON stores when `MONGODB_URI` unset
 - **Chaos**: Guarded via `CHAOS_ENABLED=true` + `CHAOS_MODE` pattern
 
-### Production CSS (Working)
-- `npm.cmd run start -w @ecommerce/web` serves with full Tailwind CSS
-- All navy/teal styling applied correctly
-- Classes: `bg-white`, `text-navy-800`, `border-navy-100`, `bg-teal-600`, etc.
-
-### Development Mode (Turbopack Limitation)
-- Next.js 16 Turbopack has known Tailwind CSS v4 `@import` injection limitations
-- Utility classes present in HTML but `<style>` tags not visibly injected
-- **Workaround**: Use production build for full CSS support
-- Classes still render correctly in browser even if not visible in "View Source"
+### CSS Loading
+- The root layout imports `globals.css`, which loads Tailwind CSS v4 and the app's global styles.
+- `npm.cmd run build -w @ecommerce/web` succeeds and emits a CSS asset under `.next/static/chunks/`.
+- Development mode does not require a separate CSS workaround.
 
 ## Files Modified (CSS/Config Fixes)
-1. `apps/web/next.config.ts` - Removed `output: 'standalone'` 
-2. `apps/web/tailwind.config.mjs` - Navy/teal color palette (50-950, 50-900)
-3. `apps/web/src/app/globals.css` - `@import 'tailwindcss'` syntax
+1. `apps/web/src/app/layout.tsx` - Imports `globals.css`
+2. `apps/web/src/app/globals.css` - Uses Tailwind CSS v4 `@import 'tailwindcss'` syntax
 
 ## Run Modes
 
@@ -42,10 +35,10 @@ npm.cmd run start -w @ecommerce/web
 # http://localhost:3000 - full styling
 ```
 
-### Development (Turbopack - classes present, CSS limited)
+### Development
 ```powershell
 npm.cmd run dev -w @ecommerce/web
-# http://localhost:3000 - classes in HTML, styles via runtime injection
+# http://localhost:3000
 ```
 
 ### Docker Compose (Full observability lab)

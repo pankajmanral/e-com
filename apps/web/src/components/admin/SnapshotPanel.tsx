@@ -177,7 +177,7 @@ export default function SnapshotPanel() {
                 </div>
                 <span
                   className="shrink-0 text-xs text-navy-500 tabular-nums"
-                  title={new Date(snapshot.createdAt).toLocaleString('en-GB')}
+                  title={new Date(snapshot.createdAt).toLocaleString('en-IN')}
                 >
                   {formatClockTime(snapshot.createdAt)} · {formatRelativeTime(snapshot.createdAt)}
                 </span>

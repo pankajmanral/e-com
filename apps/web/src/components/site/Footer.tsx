@@ -80,8 +80,8 @@ export default function Footer() {
         <div className="mt-12 flex flex-col items-start justify-between gap-3 border-t border-navy-800 pt-6 text-xs text-navy-400 sm:flex-row sm:items-center">
           <p>© {new Date().getFullYear()} Vantage Supply Co. All rights reserved.</p>
           <p>
-            Built for the MSc Service-Mesh Resilience Engineering project · GBP pricing · Ships
-            across the UK
+            Built for the MSc Service-Mesh Resilience Engineering project · INR pricing · Ships
+            across India
           </p>
         </div>
       </div>
