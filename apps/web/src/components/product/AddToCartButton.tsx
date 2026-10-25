@@ -27,13 +27,36 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
   const { add } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [justAdded, setJustAdded] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [checking, setChecking] = useState(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    fetch('/api/auth/me', { cache: 'no-store', credentials: 'include' })
+      .then((res) => setAuthenticated(res.ok))
+      .catch(() => setAuthenticated(false))
+      .finally(() => setChecking(false));
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, []);
+
+  if (checking) {
+    return null;
+  }
+
+  if (!authenticated) {
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-navy-500">
+          Please <Link href="/login" className="font-medium text-teal-600 hover:text-teal-700 underline underline-offset-2">
+            log in
+          </Link>{' '}
+          to add items to your cart.
+        </p>
+      </div>
+    );
+  }
 
   const outOfStock = product.stock <= 0;
   const max = Math.max(product.stock, 0);

@@ -3,6 +3,10 @@ import { createLogger, MongoManager, mongoConfigFromEnv } from '@ecommerce/share
 import { createUserApp } from './app';
 import { createUserStore } from './store';
 
+const ADMIN_EMAIL = 'admin@gmail.com';
+const ADMIN_PASSWORD = 'admin';
+const ADMIN_FULL_NAME = 'Lab Administrator';
+
 async function main(): Promise<void> {
   const logger = createLogger('user-service');
 
@@ -11,6 +15,27 @@ async function main(): Promise<void> {
   const mongo = new MongoManager(mongoConfigFromEnv('user-service'));
   const db = await mongo.connect(logger);
   const store = await createUserStore(db, logger);
+
+  // Seed a default admin user so the admin dashboard can be password protected.
+  // Idempotent: skipped when an admin already exists. The store hashes the
+  // plaintext password before persisting.
+  const existingAdmin = await store.findByEmail(ADMIN_EMAIL);
+  if (!existingAdmin) {
+    await store.create({
+      fullName: ADMIN_FULL_NAME,
+      email: ADMIN_EMAIL,
+      password: ADMIN_PASSWORD,
+      role: 'admin',
+      address: {
+        line1: '1 Admin Way',
+        city: 'Admin City',
+        postalCode: '00000',
+        country: 'Adminland',
+      },
+    });
+    logger.info({ email: ADMIN_EMAIL }, 'seeded default admin user');
+  }
+
   const { app } = createUserApp({ store, mongo });
 
   const port = Number(process.env.PORT ?? 4001);

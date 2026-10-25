@@ -1,6 +1,6 @@
 import { type Db, type Collection } from 'mongodb';
 import type { User, Logger } from '@ecommerce/shared';
-import { nextSequenceId } from '@ecommerce/shared';
+import { hashPassword, verifyPassword, nextSequenceId } from '@ecommerce/shared';
 import { SEED_USERS } from '../data/users';
 import type { CreateUserInput, ResolveResult, UserStoreApi } from './types';
 
@@ -68,13 +68,27 @@ export class MongoUserStore implements UserStoreApi {
     return this.toUser(await this.col.findOne({ email: email.toLowerCase() }));
   }
 
+  async findByCredentials(email: string, password: string): Promise<User | undefined> {
+    const user = await this.findByEmail(email);
+    if (!user || !user.passwordHash || !user.salt) return undefined;
+    return verifyPassword(password, user.salt, user.passwordHash) ? user : undefined;
+  }
+
   async create(input: CreateUserInput): Promise<User> {
     const id = await nextSequenceId(this.db, 'users', 'usr');
+    let passwordHash: string | undefined;
+    let salt: string | undefined;
+    if (input.password) {
+      ({ salt, hash: passwordHash } = hashPassword(input.password));
+    }
     const user: User = {
       id,
       fullName: input.fullName,
       email: input.email.toLowerCase(),
       ...(input.phone ? { phone: input.phone } : {}),
+      ...(passwordHash ? { passwordHash } : {}),
+      ...(salt ? { salt } : {}),
+      role: input.role ?? 'customer',
       address: input.address,
       createdAt: new Date().toISOString(),
     };

@@ -23,13 +23,27 @@ export interface QuickAddProps {
 export default function QuickAddButton({ product }: QuickAddProps) {
   const { add } = useCart();
   const [added, setAdded] = useState(false);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [checking, setChecking] = useState(true);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    fetch('/api/auth/me', { cache: 'no-store', credentials: 'include' })
+      .then((res) => setAuthenticated(res.ok))
+      .catch(() => setAuthenticated(false))
+      .finally(() => setChecking(false));
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, []);
+
+  if (checking) {
+    return null;
+  }
+
+  if (!authenticated) {
+    return null;
+  }
 
   const disabled = product.stock <= 0;
 

@@ -1,4 +1,5 @@
 /** Cross-service DTOs. Services own their persistence; these are wire types. */
+import type { UserRole } from './auth';
 
 export interface Address {
   line1: string;
@@ -15,6 +16,12 @@ export interface User {
   phone?: string;
   address: Address;
   createdAt: string;
+  /** Hashed password (scrypt). Absent for seed customers who have not set one. */
+  passwordHash?: string;
+  /** Password salt (stored alongside the hash). */
+  salt?: string;
+  /** 'customer' (default) or 'admin'. */
+  role?: UserRole;
 }
 
 export type ProductCategory = 'audio' | 'wearables' | 'accessories' | 'home-tech' | 'mobile';

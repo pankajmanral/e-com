@@ -1,21 +1,20 @@
 'use client';
 
-/**
- * Primary navigation: active-route styling, cart badge and the mobile
- * hamburger menu. Client-only because it reads the pathname and cart state.
- */
-
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { CartBadge } from '@/lib/cart';
 
-const links = [
-  { href: '/', label: 'Home' },
-  { href: '/products', label: 'Shop' },
-  { href: '/cart', label: 'Cart', showBadge: true },
-  { href: '/admin', label: 'Admin' },
+interface SiteNavMenuProps {
+  user: { id: string; email: string; role: string } | null;
+}
+
+const shopLinks = [
+  { href: '/products?sort=featured', label: 'Featured' },
+  { href: '/products?category=audio', label: 'Audio' },
+  { href: '/products?category=wearables', label: 'Wearables' },
+  { href: '/products?category=accessories', label: 'Accessories' },
 ];
 
 function isActive(pathname: string, href: string): boolean {
@@ -24,20 +23,32 @@ function isActive(pathname: string, href: string): boolean {
   return pathname.startsWith(href);
 }
 
-export default function SiteNavMenu() {
+export default function SiteNavMenu({ user }: SiteNavMenuProps) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
-  // Close the mobile menu whenever the route changes.
   useEffect(() => {
     setOpen(false);
   }, [pathname]);
+
+  const desktopLinks = [
+    { href: '/', label: 'Home' },
+    { href: '/products', label: 'Shop', showBadge: true },
+    ...(user ? [{ href: '/cart', label: 'Cart', showBadge: true }] : []),
+    ...(user?.role === 'admin' ? [{ href: '/admin', label: 'Admin' }] : []),
+  ];
+
+  const mobileLinks = [
+    { href: '/', label: 'Home' },
+    ...(user ? [{ href: '/cart', label: 'Cart', showBadge: true }] : []),
+    ...(user?.role === 'admin' ? [{ href: '/admin', label: 'Admin' }] : []),
+  ];
 
   return (
     <nav aria-label="Primary" className="flex items-center">
       {/* Desktop nav */}
       <ul className="hidden items-center gap-1 sm:flex">
-        {links.map((link) => (
+        {desktopLinks.map((link) => (
           <li key={link.href}>
             <Link
               href={link.href}
@@ -51,7 +62,7 @@ export default function SiteNavMenu() {
             >
               <span className="inline-flex items-center gap-1.5">
                 {link.label}
-                {link.showBadge && <CartBadge />}
+                {link.showBadge && user && <CartBadge />}
               </span>
               {isActive(pathname, link.href) && (
                 <span
@@ -90,7 +101,7 @@ export default function SiteNavMenu() {
           className="absolute inset-x-0 top-16 border-b border-navy-100 bg-white shadow-soft sm:hidden"
         >
           <ul className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-4">
-            {links.map((link) => (
+            {mobileLinks.map((link) => (
               <li key={link.href}>
                 <Link
                   href={link.href}
@@ -103,7 +114,7 @@ export default function SiteNavMenu() {
                   )}
                 >
                   {link.label}
-                  {link.showBadge && <CartBadge />}
+                  {link.showBadge && user && <CartBadge />}
                 </Link>
               </li>
             ))}

@@ -1,3 +1,4 @@
+import { hashPassword, verifyPassword } from '@ecommerce/shared';
 import type { User } from '@ecommerce/shared';
 import { SEED_USERS } from '../data/users';
 import type { CreateUserInput, ResolveResult, UserStoreApi } from './types';
@@ -31,13 +32,27 @@ export class MemoryUserStore implements UserStoreApi {
     return Array.from(this.users.values()).find((user) => user.email.toLowerCase() === normalized);
   }
 
+  async findByCredentials(email: string, password: string): Promise<User | undefined> {
+    const user = await this.findByEmail(email);
+    if (!user || !user.passwordHash || !user.salt) return undefined;
+    return verifyPassword(password, user.salt, user.passwordHash) ? user : undefined;
+  }
+
   async create(input: CreateUserInput): Promise<User> {
     this.counter += 1;
+    let passwordHash: string | undefined;
+    let salt: string | undefined;
+    if (input.password) {
+      ({ salt, hash: passwordHash } = hashPassword(input.password));
+    }
     const user: User = {
       id: `usr-${1000 + this.counter}`,
       fullName: input.fullName,
       email: input.email.toLowerCase(),
       ...(input.phone ? { phone: input.phone } : {}),
+      ...(passwordHash ? { passwordHash } : {}),
+      ...(salt ? { salt } : {}),
+      role: input.role ?? 'customer',
       address: input.address,
       createdAt: new Date().toISOString(),
     };

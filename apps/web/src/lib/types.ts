@@ -258,3 +258,29 @@ export interface ApiErrorBody {
     requestId?: string;
   };
 }
+
+/* ------------------------------------------------------------------ */
+/* Auth                                                               */
+/* ------------------------------------------------------------------ */
+
+export type AuthUserRole = 'customer' | 'admin';
+
+export interface AuthUser {
+  id: string;
+  fullName: string;
+  email: string;
+  role: AuthUserRole;
+}
+
+export interface AuthRegisterResponse {
+  user: AuthUser;
+}
+
+export interface AuthLoginResponse {
+  token: string;
+  user: AuthUser;
+}
+
+export interface AuthLogoutResponse {
+  ok: boolean;
+}

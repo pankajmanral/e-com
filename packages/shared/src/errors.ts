@@ -33,6 +33,10 @@ export class AppError extends Error {
     return new AppError(404, 'NOT_FOUND', `${resource} not found`);
   }
 
+  static forbidden(message = 'Forbidden', details?: unknown): AppError {
+    return new AppError(403, 'FORBIDDEN', message, details);
+  }
+
   static conflict(message = 'Conflict', details?: unknown): AppError {
     return new AppError(409, 'CONFLICT', message, details);
   }
