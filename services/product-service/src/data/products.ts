@@ -30,7 +30,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 312,
     featured: true,
     tags: ['wireless', 'noise-cancelling', 'bluetooth'],
-    image: '/img/aurora-wireless-headphones',
+    image: '/img/aurora-wireless-headphones.jpg',
   },
   {
     id: 'prd-2002',
@@ -46,7 +46,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 480,
     featured: true,
     tags: ['portable', 'waterproof', 'bluetooth'],
-    image: '/img/nomad-bluetooth-speaker',
+    image: '/img/nomad-bluetooth-speaker.jpg',
   },
   {
     id: 'prd-2003',
@@ -62,7 +62,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 226,
     featured: false,
     tags: ['earbuds', 'wireless', 'commute'],
-    image: '/img/whisper-true-wireless-earbuds',
+    image: '/img/whisper-true-wireless-earbuds.jpg',
   },
   {
     id: 'prd-2004',
@@ -78,7 +78,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 87,
     featured: false,
     tags: ['studio', 'wired', 'speakers'],
-    image: '/img/vertex-studio-monitors',
+    image: '/img/vertex-studio-monitors.jpg',
   },
   {
     id: 'prd-2005',
@@ -94,7 +94,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 156,
     featured: false,
     tags: ['vinyl', 'home', 'bluetooth'],
-    image: '/img/vinylstream-turntable',
+    image: '/img/vinylstream-turntable.jpg',
   },
 
   // ------------------------------------------------------------ wearables
@@ -112,7 +112,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 421,
     featured: true,
     tags: ['fitness', 'gps', 'smartwatch'],
-    image: '/img/pulse-smartwatch-2',
+    image: '/img/pulse-smartwatch-2.jpg',
   },
   {
     id: 'prd-2007',
@@ -128,7 +128,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 389,
     featured: false,
     tags: ['fitness', 'tracker', 'budget'],
-    image: '/img/stride-fitness-band',
+    image: '/img/stride-fitness-band.jpg',
   },
   {
     id: 'prd-2008',
@@ -144,7 +144,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 64,
     featured: false,
     tags: ['running', 'gps', 'waterproof'],
-    image: '/img/lumen-running-watch',
+    image: '/img/lumen-running-watch.jpg',
   },
   {
     id: 'prd-2009',
@@ -160,7 +160,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 143,
     featured: false,
     tags: ['sleep', 'health', 'titanium'],
-    image: '/img/halo-sleep-ring',
+    image: '/img/halo-sleep-ring.jpg',
   },
   {
     id: 'prd-2010',
@@ -176,7 +176,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 52,
     featured: false,
     tags: ['heated', 'outdoor', 'wearable'],
-    image: '/img/climaheat-heated-vest',
+    image: '/img/climaheat-heated-vest.jpg',
   },
 
   // ---------------------------------------------------------- accessories
@@ -194,7 +194,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 267,
     featured: false,
     tags: ['charging', 'magsafe', 'desk'],
-    image: '/img/orbit-3-in-1-charging-station',
+    image: '/img/orbit-3-in-1-charging-station.jpg',
   },
   {
     id: 'prd-2012',
@@ -210,7 +210,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 458,
     featured: false,
     tags: ['usb-c', 'braided', '2m'],
-    image: '/img/titan-usb-c-braided-cable',
+    image: '/img/titan-usb-c-braided-cable.jpg',
   },
   {
     id: 'prd-2013',
@@ -226,7 +226,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 132,
     featured: false,
     tags: ['sleeve', 'padded', 'travel'],
-    image: '/img/vault-14-laptop-sleeve',
+    image: '/img/vault-14-laptop-sleeve.jpg',
   },
   {
     id: 'prd-2014',
@@ -242,7 +242,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 205,
     featured: true,
     tags: ['keyboard', 'rgb', 'hot-swap'],
-    image: '/img/aero-mechanical-keyboard',
+    image: '/img/aero-mechanical-keyboard.jpg',
   },
   {
     id: 'prd-2015',
@@ -258,7 +258,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 176,
     featured: false,
     tags: ['mouse', 'ergonomic', 'wireless'],
-    image: '/img/prism-wireless-mouse',
+    image: '/img/prism-wireless-mouse.jpg',
   },
 
   // ----------------------------------------------------------- home-tech
@@ -276,7 +276,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 98,
     featured: true,
     tags: ['projector', '4k', 'streaming'],
-    image: '/img/nebula-smart-projector',
+    image: '/img/nebula-smart-projector.jpg',
   },
   {
     id: 'prd-2017',
@@ -292,7 +292,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 84,
     featured: false,
     tags: ['smart-home', 'sensors', 'air-quality'],
-    image: '/img/sense-air-quality-monitor',
+    image: '/img/sense-air-quality-monitor.jpg',
   },
   {
     id: 'prd-2018',
@@ -308,7 +308,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 310,
     featured: false,
     tags: ['security', 'camera', 'smart-home'],
-    image: '/img/guardeye-doorbell-camera',
+    image: '/img/guardeye-doorbell-camera.jpg',
   },
   {
     id: 'prd-2019',
@@ -324,7 +324,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 121,
     featured: false,
     tags: ['lighting', 'desk', 'circadian'],
-    image: '/img/glow-adaptive-desk-lamp',
+    image: '/img/glow-adaptive-desk-lamp.jpg',
   },
   {
     id: 'prd-2020',
@@ -340,7 +340,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 244,
     featured: false,
     tags: ['smart-home', 'energy', 'plugs'],
-    image: '/img/harbor-smart-plugs-4-pack',
+    image: '/img/harbor-smart-plugs-4-pack.jpg',
   },
 
   // -------------------------------------------------------------- mobile
@@ -358,7 +358,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 189,
     featured: false,
     tags: ['charger', 'gan', 'usb-c'],
-    image: '/img/drift-65w-gan-charger',
+    image: '/img/drift-65w-gan-charger.jpg',
   },
   {
     id: 'prd-2022',
@@ -374,7 +374,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 356,
     featured: false,
     tags: ['power-bank', 'travel', 'usb-c'],
-    image: '/img/voyager-20k-power-bank',
+    image: '/img/voyager-20k-power-bank.jpg',
   },
   {
     id: 'prd-2023',
@@ -390,7 +390,7 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 264,
     featured: true,
     tags: ['smartphone', '5g', 'flagship'],
-    image: '/img/aria-5g-smartphone',
+    image: '/img/aria-5g-smartphone.jpg',
   },
   {
     id: 'prd-2024',
@@ -406,6 +406,6 @@ export const SEED_PRODUCTS: Product[] = [
     reviewCount: 76,
     featured: false,
     tags: ['magsafe', 'leather', 'wallet'],
-    image: '/img/cove-magnetic-wallet',
+    image: '/img/cove-magnetic-wallet.jpg',
   },
 ];
