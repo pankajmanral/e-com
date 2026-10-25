@@ -10,13 +10,6 @@ interface SiteNavMenuProps {
   user: { id: string; email: string; role: string } | null;
 }
 
-const shopLinks = [
-  { href: '/products?sort=featured', label: 'Featured' },
-  { href: '/products?category=audio', label: 'Audio' },
-  { href: '/products?category=wearables', label: 'Wearables' },
-  { href: '/products?category=accessories', label: 'Accessories' },
-];
-
 function isActive(pathname: string, href: string): boolean {
   if (href === '/') return pathname === '/';
   if (href === '/cart') return pathname.startsWith('/cart') || pathname.startsWith('/checkout') || pathname.startsWith('/orders');
@@ -31,18 +24,22 @@ export default function SiteNavMenu({ user }: SiteNavMenuProps) {
     setOpen(false);
   }, [pathname]);
 
-  const desktopLinks = [
-    { href: '/', label: 'Home' },
-    { href: '/products', label: 'Shop', showBadge: true },
-    ...(user ? [{ href: '/cart', label: 'Cart', showBadge: true }] : []),
-    ...(user?.role === 'admin' ? [{ href: '/admin', label: 'Admin' }] : []),
-  ];
+  const isAdmin = user?.role === 'admin';
 
-  const mobileLinks = [
-    { href: '/', label: 'Home' },
-    ...(user ? [{ href: '/cart', label: 'Cart', showBadge: true }] : []),
-    ...(user?.role === 'admin' ? [{ href: '/admin', label: 'Admin' }] : []),
-  ];
+  const desktopLinks = isAdmin
+    ? [{ href: '/admin', label: 'Admin' }]
+    : [
+        { href: '/', label: 'Home' },
+        { href: '/products', label: 'Shop' },
+        ...(user ? [{ href: '/cart', label: 'Cart', showBadge: true }] : []),
+      ];
+
+  const mobileLinks = isAdmin
+    ? [{ href: '/admin', label: 'Admin' }]
+    : [
+        { href: '/', label: 'Home' },
+        ...(user ? [{ href: '/cart', label: 'Cart', showBadge: true }] : []),
+      ];
 
   return (
     <nav aria-label="Primary" className="flex items-center">

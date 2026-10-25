@@ -4,7 +4,7 @@ import { createUserApp } from './app';
 import { createUserStore } from './store';
 
 const ADMIN_EMAIL = 'admin@gmail.com';
-const ADMIN_PASSWORD = 'admin';
+const ADMIN_PASSWORD = 'admin123';
 const ADMIN_FULL_NAME = 'Lab Administrator';
 
 async function main(): Promise<void> {
